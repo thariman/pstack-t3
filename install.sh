@@ -25,16 +25,20 @@ if command -v claude >/dev/null; then
   fi
 fi
 
-if command -v codex >/dev/null; then
+# Codex and Grok load pstack from a skills folder. Grok also reads ~/.claude/skills and Claude
+# plugins, so with Claude present it already has both, and linking again would load pstack twice.
+for h in codex grok; do
+  command -v $h >/dev/null || continue
   found=1
-  link "$src/skills/t3-mode" ~/.codex/skills/t3-mode
+  [ $h = grok ] && command -v claude >/dev/null && { echo "grok: uses Claude's t3-mode and pstack"; continue; }
+  link "$src/skills/t3-mode" ~/.$h/skills/t3-mode
   if [ -d "$plugins/.git" ]; then
     git -C "$plugins" pull -q --ff-only
-  elif [ ! -e ~/.codex/skills/pstack ] && [ ! -e ~/.agents/skills/pstack ]; then
+  elif [ ! -e ~/.$h/skills/pstack ] && [ ! -e ~/.agents/skills/pstack ]; then
     git clone -q --depth 1 https://github.com/cursor/plugins "$plugins"
   fi
-  [ -d "$plugins/pstack" ] && link "$plugins/pstack" ~/.codex/skills/pstack
-fi
+  [ -d "$plugins/pstack" ] && link "$plugins/pstack" ~/.$h/skills/pstack
+done
 
-[ $found = 1 ] || { echo "no claude or codex on PATH, nothing to install"; exit 1; }
+[ $found = 1 ] || { echo "no claude, codex or grok on PATH, nothing to install"; exit 1; }
 "$src/check.sh"
