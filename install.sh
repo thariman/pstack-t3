@@ -5,7 +5,14 @@ set -euo pipefail
 src=$(cd "$(dirname "$0")" && pwd)
 plugins=~/.local/share/cursor-plugins
 
+before=$(git -C "$src" rev-parse HEAD 2>/dev/null) || before=""
 git -C "$src" pull -q --ff-only 2>/dev/null || echo "note: could not pull $src, using it as is"
+# bash keeps running the file it opened, so a pull only takes effect on the next run. Restart once.
+after=$(git -C "$src" rev-parse HEAD 2>/dev/null) || after=""
+if [ -z "${PSTACK_T3_RESTARTED:-}" ] && [ "$after" != "$before" ]; then
+  echo "updated pstack-t3 to ${after:0:7}, restarting the installer"
+  PSTACK_T3_RESTARTED=1 exec bash "$src/install.sh" "$@"
+fi
 
 link() {
   mkdir -p "$(dirname "$2")"

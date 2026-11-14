@@ -22,6 +22,12 @@ if [ "$1" = clone ]; then
   for dest in "$@"; do :; done
   mkdir -p "$dest/.git"
   cp -R "$TEST_ROOT/fixture" "$dest/pstack"
+elif [ "$1 $2 $3" = "-C $TEST_ROOT/repo rev-parse" ]; then
+  cat "$TEST_ROOT/head" 2>/dev/null || echo old
+elif [ "$1 $2 $3" = "-C $TEST_ROOT/repo pull" ] && [ -n "${SELF_UPDATE:-}" ] && [ ! -e "$TEST_ROOT/head" ]; then
+  echo new > "$TEST_ROOT/head"
+  sed -i.bak '4a\
+echo new-installer-code-ran' "$TEST_ROOT/repo/install.sh"
 elif [ "$1" = -C ] && [ "$2" != "$TEST_ROOT/repo" ]; then
   cp "$TEST_ROOT/fixture/plugin.json" "$2/pstack/plugin.json"
 fi
@@ -106,4 +112,9 @@ export CURL_FAIL=1
 bash "$tmp/repo/install.sh" > "$tmp/offline" 2>&1
 grep -q '^upstream: pstack unknown$' "$tmp/offline"
 if grep -q ' STALE$' "$tmp/offline"; then exit 1; fi
-printf '\nPASS: cases a-d, backup contents, clone/pull, Grok inheritance, t3-mode preservation, and unknown upstream\n'
+unset CURL_FAIL
+HOME=$(mktemp -d "$tmp/home-e.XXXXXX")
+SELF_UPDATE=1 run e
+[ "$(grep -c '^new-installer-code-ran$' "$tmp/output")" = 1 ]
+[ "$(grep -c '^updated pstack-t3 to new, restarting the installer$' "$tmp/output")" = 1 ]
+printf '\nPASS: cases a-e, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart\n'
