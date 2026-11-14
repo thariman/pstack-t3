@@ -43,7 +43,7 @@ for h in codex grok; do
   [ "$h" != codex ] || copies+=("$HOME/.agents/skills/pstack")
   for p in "${copies[@]}"; do
     if [ -d "$p" ] && [ ! -L "$p" ]; then
-      backup="$HOME/.local/share/pstack-t3/backups/$h-$(basename "$(dirname "$p")")-pstack"
+      backup="$HOME/.local/share/pstack-t3/backups/$h-$(basename "$(dirname "$(dirname "$p")")" | tr -d .)-pstack"
       dest="$backup-$(date +%Y%m%d-%H%M%S)"
       while [ -e "$dest" ]; do sleep 1; dest="$backup-$(date +%Y%m%d-%H%M%S)"; done
       mkdir -p "$(dirname "$dest")"

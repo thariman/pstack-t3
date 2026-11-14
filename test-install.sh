@@ -52,7 +52,7 @@ cp -R "$tmp/fixture" "$HOME/.codex/skills/pstack"
 run a
 [ -L "$HOME/.codex/skills/pstack" ]
 [ "$(backup_count)" = 1 ]
-backup=$(find "$HOME/.local/share/pstack-t3/backups" -name 'codex-skills-pstack-*' -type d)
+backup=$(find "$HOME/.local/share/pstack-t3/backups" -name 'codex-codex-pstack-*' -type d)
 diff -r "$tmp/fixture" "$backup"
 [ "$(find "$HOME/.codex/skills" -type d -name pstack | wc -l | tr -d ' ')" = 0 ]
 grep -q '^codex: pstack 0.15.36 STALE$' "$tmp/output"
