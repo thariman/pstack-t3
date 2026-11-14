@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs t3-mode, plus pstack where it is missing, for every harness on this machine. Safe to rerun.
+# Installs t3-mode and updates pstack for every harness on this machine. Safe to rerun.
 # Fresh machine: gh repo clone thariman/pstack-t3 ~/.local/share/pstack-t3 && ~/.local/share/pstack-t3/install.sh
 set -euo pipefail
 src=$(cd "$(dirname "$0")" && pwd)
@@ -18,7 +18,14 @@ if command -v claude >/dev/null; then
   found=1
   link "$src/skills/t3-mode" ~/.claude/skills/t3-mode
   if [[ $(claude plugin list 2>/dev/null) == *pstack@cursor-plugins* ]]; then
-    claude plugin update pstack@cursor-plugins >/dev/null 2>&1 || true
+    err=$(mktemp)
+    if { claude plugin marketplace update cursor-plugins && claude plugin update pstack@cursor-plugins; } 2>"$err"; then
+      cat "$err" >&2
+    else
+      cat "$err" >&2
+      echo "pstack update failed (claude): $(tail -n 1 "$err")"
+    fi
+    rm -f "$err"
   else
     claude plugin marketplace add cursor/plugins
     claude plugin install pstack@cursor-plugins
@@ -32,13 +39,45 @@ for h in codex grok; do
   found=1
   [ $h = grok ] && command -v claude >/dev/null && { echo "grok: uses Claude's t3-mode and pstack"; continue; }
   link "$src/skills/t3-mode" ~/.$h/skills/t3-mode
+  copies=("$HOME/.$h/skills/pstack")
+  [ "$h" != codex ] || copies+=("$HOME/.agents/skills/pstack")
+  for p in "${copies[@]}"; do
+    if [ -d "$p" ] && [ ! -L "$p" ]; then
+      backup="$HOME/.local/share/pstack-t3/backups/$h-$(basename "$(dirname "$p")")-pstack"
+      dest="$backup-$(date +%Y%m%d-%H%M%S)"
+      while [ -e "$dest" ]; do sleep 1; dest="$backup-$(date +%Y%m%d-%H%M%S)"; done
+      mkdir -p "$(dirname "$dest")"
+      mv "$p" "$dest"
+      echo "moved $p -> $dest"
+    fi
+  done
   if [ -d "$plugins/.git" ]; then
     git -C "$plugins" pull -q --ff-only
-  elif [ ! -e ~/.$h/skills/pstack ] && [ ! -e ~/.agents/skills/pstack ]; then
+  else
+    mkdir -p "$(dirname "$plugins")"
     git clone -q --depth 1 https://github.com/cursor/plugins "$plugins"
   fi
-  [ -d "$plugins/pstack" ] && link "$plugins/pstack" ~/.$h/skills/pstack
+  link "$plugins/pstack" ~/.$h/skills/pstack
 done
 
 [ $found = 1 ] || { echo "no claude, codex or grok on PATH, nothing to install"; exit 1; }
+version() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$@" 2>/dev/null | sed -n '1p'; }
+upstream=$(curl -fsS https://raw.githubusercontent.com/cursor/plugins/main/pstack/plugin.json 2>/dev/null) || upstream=""
+upstream=$(version <<<"$upstream")
+upstream=${upstream:-unknown}
+echo "upstream: pstack $upstream"
+claude_version=""
+for h in claude codex grok; do
+  command -v "$h" >/dev/null || continue
+  if [ "$h" = claude ]; then
+    listing=$(claude plugin list 2>/dev/null) || listing=""
+    v=$(sed -n '/pstack@cursor-plugins/,/Version:/{s/.*Version:[[:space:]]*//p;}' <<<"$listing" | sed -n '1p')
+    claude_version=$v
+  elif [ "$h" = grok ] && command -v claude >/dev/null; then v=$claude_version
+  else v=$(version "$HOME/.$h/skills/pstack/plugin.json"); fi
+  v=${v:-unknown}
+  stale=""
+  [ "$upstream" = unknown ] || [ "$v" = "$upstream" ] || stale=" STALE"
+  echo "$h: pstack $v$stale"
+done
 "$src/check.sh"
