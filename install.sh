@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs t3-mode and updates pstack for every harness on this machine. Safe to rerun.
-# Fresh machine: gh repo clone thariman/pstack-t3 ~/.local/share/pstack-t3 && ~/.local/share/pstack-t3/install.sh
+# Any machine, first run or rerun: [ -d ~/.local/share/pstack-t3 ] || gh repo clone thariman/pstack-t3 ~/.local/share/pstack-t3; ~/.local/share/pstack-t3/install.sh
 set -euo pipefail
 src=$(cd "$(dirname "$0")" && pwd)
 plugins=~/.local/share/cursor-plugins
