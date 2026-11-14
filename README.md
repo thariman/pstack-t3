@@ -6,12 +6,12 @@ It does not copy pstack. It adds one skill, `t3-mode`, that loads pstack and a t
 
 ## Install or update on any machine
 
-You need `git`, `curl`, a logged-in `gh` (this repo is private), and at least one of `claude`, `codex`, or `grok`.
+You need `git`, `curl`, a GitHub SSH key on the machine (this repo is private), and at least one of `claude`, `codex`, or `grok`. To check the key, run `ssh -T git@github.com`. It prints your username.
 
 Run this command. It works for the first install and for every update after.
 
 ```bash
-[ -d ~/.local/share/pstack-t3 ] || gh repo clone thariman/pstack-t3 ~/.local/share/pstack-t3; ~/.local/share/pstack-t3/install.sh
+[ -d ~/.local/share/pstack-t3 ] || git clone git@github.com:thariman/pstack-t3.git ~/.local/share/pstack-t3; ~/.local/share/pstack-t3/install.sh
 ```
 
 A healthy run ends with one version line per harness and the drift check.
