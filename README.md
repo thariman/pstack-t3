@@ -6,12 +6,12 @@ It does not copy pstack. It adds one skill, `t3-mode`, that loads pstack and a t
 
 ## Install or update on any machine
 
-You need `git`, `curl`, a GitHub SSH key on the machine (this repo is private), and at least one of `claude`, `codex`, or `grok`. To check the key, run `ssh -T git@github.com`. It prints your username.
+You need `git`, `curl`, and at least one of `claude`, `codex`, or `grok`.
 
 Run this command. It works for the first install and for every update after.
 
 ```bash
-[ -d ~/.local/share/pstack-t3 ] || git clone git@github.com:thariman/pstack-t3.git ~/.local/share/pstack-t3; ~/.local/share/pstack-t3/install.sh
+[ -d ~/.local/share/pstack-t3 ] || git clone https://github.com/thariman/pstack-t3 ~/.local/share/pstack-t3; ~/.local/share/pstack-t3/install.sh
 ```
 
 A healthy run ends with one version line per harness and the drift check.
@@ -110,17 +110,17 @@ These ran on real machines, not only in tests.
 
 | Machine | OS | Result |
 | --- | --- | --- |
-| ms-s1-max | Linux | Update path and takeover of a stray Codex copy. All harnesses at 0.15.36. |
-| omarchy-tsh | Linux | Update path. All harnesses at 0.15.36. |
-| mbp-tsh | macOS | First install for Claude and Codex. Passed under Homebrew bash 5.2 and under `/bin/bash` 3.2. |
+| Desktop | Linux | Update path and takeover of a stray Codex copy. All harnesses at 0.15.36. |
+| Laptop | Linux | Update path. All harnesses at 0.15.36. |
+| MacBook | macOS | First install for Claude and Codex. Passed under Homebrew bash 5.2 and under `/bin/bash` 3.2. |
 
-The self-update restart worked against real git in a throwaway repo. It has not yet shown on a fleet machine. A real Claude update failure has only been simulated.
+The self-update restart worked against real git in a throwaway repo. It has not yet run on a real machine. A real Claude update failure has only been simulated.
 
 ## Known limits
 
 - **The rules run on the honor system.** `t3-mode` is instructions. Nothing checks that an agent restated the goal, listed the playbook steps, or used a second model for review. The planned fix is a transcript grader, then a Claude `Stop` hook for any model that misses often. It is not built.
 - **Updates do not happen on launch.** Claude's auto-update for the `cursor-plugins` marketplace is off by default. Turn it on in `/plugin`, on the Marketplaces tab. Grok then follows Claude. Codex never updates on launch. Only `install.sh` updates it. A daily timer is planned and not built.
-- **Claude installs pstack over SSH on some machines.** On mbp-tsh, `claude plugin marketplace add` cloned `git@github.com:cursor/plugins.git`. A machine without a GitHub SSH key can fail at that step.
+- **Claude installs pstack over SSH on some machines.** On the MacBook, `claude plugin marketplace add` cloned `git@github.com:cursor/plugins.git`. A machine without a GitHub SSH key can fail at that step.
 - **`check.sh` runs under the first `bash` on `PATH`**, not under the `bash` that runs `install.sh`.
 
 ## Sources
@@ -138,6 +138,10 @@ The self-update restart worked against real git in a throwaway repo. It has not 
 Two tstack skills cover jobs pstack has no playbook for. `modernize` decides whether an old PR should be rebased, reworked, or closed. `leaving-pr-comments` labels agent-written PR comments. They are candidates to add.
 
 `github.com/tstack` is Tim Stack's account, the author of lnav. It is unrelated to agent skills.
+
+## License
+
+MIT. See `LICENSE`.
 
 ## Develop
 
