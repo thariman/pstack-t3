@@ -1,0 +1,4 @@
+interface:
+  display_name: "T3 Mode"
+  short_description: "pstack's poteto-mode with Claude and Codex delegates in T3 Code"
+  default_prompt: "Use $t3-mode for this task."
