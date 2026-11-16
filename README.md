@@ -77,6 +77,8 @@ Every step is safe to rerun.
 | Arena, architect, and interrogate panels | Fable 5.2, Opus 5.5, and latest Sol, with Grok 4.7 as a fourth seat for decisions that are hard to reverse |
 | Cross-judge | A model from a provider other than the main agent's |
 
+Every Codex Sol or Astra child runs with `serviceTier: "ultrafast"`.
+
 To override a role, add a line such as `swarm workers: codex/gpt-6.1-sol medium` to `~/.claude/rules/pstack-models.md`. Claude loads that folder on its own. Codex and Grok agents read the file when `harness-t3.md` tells them to.
 
 ## Why it is built this way

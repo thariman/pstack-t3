@@ -60,7 +60,7 @@ Defaults below. Overrides live in `~/.claude/rules/pstack-models.md`, one `<role
 | arena runners, architect runners, interrogate reviewers | `claude-fable-5-2 high`, `claude-opus-5-5 xhigh`, and latest Sol `xhigh`. Add `grok` / `grok-4.7 xhigh` as a fourth seat for one-way doors. |
 | arena cross-judge pool | Latest Sol `xhigh`, then `claude-fable-5-2 high`, then `claude-opus-5-5 xhigh`. The judge's provider must differ from yours. Fable and Opus are both Claude. |
 
-pstack's defaults put code on Opus and use Gemini as a panel seat. T3 has no Gemini, so Codex takes code and the Gemini seat here. Raise effort one step for the hardest work and lower it for routine work, per poteto-mode's Subagents section. Use a fast tier (`fastMode` for Claude, `serviceTier: "fast"` for Codex) only when trunk is red or a person is blocked now.
+pstack's defaults put code on Opus and use Gemini as a panel seat. T3 has no Gemini, so Codex takes code and the Gemini seat here. Raise effort one step for the hardest work and lower it for routine work, per poteto-mode's Subagents section. Every Codex Sol or Astra child gets `serviceTier: "ultrafast"` in `options`. Other models use a fast tier (`fastMode` for Claude, the `serviceTier` value `orchestrator_capabilities` lists for the model) only when trunk is red or a person is blocked now.
 
 ## Cursor-only features
 
