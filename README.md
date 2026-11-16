@@ -17,10 +17,10 @@ Run this command. It works for the first install and for every update after.
 A healthy run ends with one version line per harness and the drift check.
 
 ```text
-upstream: pstack 0.15.36
-claude: pstack 0.15.36
-codex: pstack 0.15.36
-grok: pstack 0.15.36
+upstream: pstack 0.15.42
+claude: pstack 0.15.42
+codex: pstack 0.15.42
+grok: pstack 0.15.42
 ok: every Cursor name pstack uses is mapped (...)
 ```
 
@@ -66,14 +66,15 @@ Every step is safe to rerun.
 
 ## Model roles
 
-`harness-t3.md` assigns these defaults. pstack's own defaults use Grok for code. Here Codex takes that job.
+`harness-t3.md` assigns these defaults. pstack's own defaults put code on Opus 5.5 and use Gemini 4 Carbon as a panel seat. T3 has no Gemini, so Codex takes both jobs here.
 
 | Role | Default |
 | --- | --- |
-| Judgment, prose, and the hardest code | Claude `claude-opus-5-5`, effort `xhigh` |
+| Judgment and prose | Claude `claude-opus-5-5`, effort `xhigh` |
+| Hardest tasks | Claude `claude-fable-5-2`, effort `max` |
 | Feature, refactoring, bug fix, and perf work | Codex latest Sol, `reasoningEffort: high` |
-| Swarm workers and explorers | Codex latest Sol, `reasoningEffort: medium` |
-| Arena, architect, and interrogate panels | Opus 5.5 and latest Sol, with Grok 4.7 as a third seat for decisions that are hard to reverse |
+| Swarm workers | Codex latest Sol, `reasoningEffort: medium` |
+| Arena, architect, and interrogate panels | Fable 5.2, Opus 5.5, and latest Sol, with Grok 4.7 as a fourth seat for decisions that are hard to reverse |
 | Cross-judge | A model from a provider other than the main agent's |
 
 To override a role, add a line such as `swarm workers: codex/gpt-6.1-sol medium` to `~/.claude/rules/pstack-models.md`. Claude loads that folder on its own. Codex and Grok agents read the file when `harness-t3.md` tells them to.
@@ -125,7 +126,7 @@ The self-update restart worked against real git in a throwaway repo. It has not 
 
 ## Sources
 
-- **pstack** by Lauren Tan (poteto), MIT license, from [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Built against version 0.15.36, commit `3dbd22f`. `harness-t3.md` follows the structure of pstack's `docs/harness/claude-code.md`.
+- **pstack** by Lauren Tan (poteto), MIT license, from [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Built against version 0.15.36, commit `3dbd22f`, and checked against 0.15.42, commit `bf0c7cd`. `harness-t3.md` follows the structure of pstack's `docs/harness/claude-code.md`.
 - **tstack** by Theo Browne, MIT license, from [t3dotgg/tstack](https://github.com/t3dotgg/tstack). No tstack skill is installed or called. These rules in `harness-t3.md` come from its skills.
 
 | Rule | tstack skill |

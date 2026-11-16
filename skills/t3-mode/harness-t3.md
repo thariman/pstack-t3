@@ -53,13 +53,14 @@ Defaults below. Overrides live in `~/.claude/rules/pstack-models.md`, one `<role
 
 | pstack role | Default target in T3 |
 | --- | --- |
-| judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment | `claudeAgent` / `claude-opus-5-5`, effort `xhigh` |
+| judgment and prose, reflect judgment | `claudeAgent` / `claude-opus-5-5`, effort `xhigh` |
+| hardest tasks | `claudeAgent` / `claude-fable-5-2`, effort `max` |
 | feature, refactoring, bug-fix, perf-issue, hillclimb | `codex` / latest Sol, `reasoningEffort: high` |
-| swarm workers, how explorer, why investigators, reflect tooling | `codex` / latest Sol, `reasoningEffort: medium` |
-| arena runners, architect runners, interrogate reviewers | `claude-opus-5-5 xhigh` and latest Sol `xhigh`. Add `grok` / `grok-4.7 xhigh` as a third seat for one-way doors. |
-| arena cross-judge pool | Latest Sol `xhigh`, then `claude-opus-5-5 xhigh`. The judge's provider must differ from yours. |
+| swarm workers, reflect tooling | `codex` / latest Sol, `reasoningEffort: medium` |
+| arena runners, architect runners, interrogate reviewers | `claude-fable-5-2 high`, `claude-opus-5-5 xhigh`, and latest Sol `xhigh`. Add `grok` / `grok-4.7 xhigh` as a fourth seat for one-way doors. |
+| arena cross-judge pool | Latest Sol `xhigh`, then `claude-fable-5-2 high`, then `claude-opus-5-5 xhigh`. The judge's provider must differ from yours. Fable and Opus are both Claude. |
 
-pstack's `grok-*` defaults map to Codex here. Name Grok in the overrides file to get it back. Raise effort one step for the hardest work and lower it for routine work, per poteto-mode's Subagents section. Use a fast tier (`fastMode` for Claude, `serviceTier: "priority"` for Codex) only when trunk is red or a person is blocked now.
+pstack's defaults put code on Opus and use Gemini as a panel seat. T3 has no Gemini, so Codex takes code and the Gemini seat here. Raise effort one step for the hardest work and lower it for routine work, per poteto-mode's Subagents section. Use a fast tier (`fastMode` for Claude, `serviceTier: "fast"` for Codex) only when trunk is red or a person is blocked now.
 
 ## Cursor-only features
 
