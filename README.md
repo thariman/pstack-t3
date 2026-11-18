@@ -17,10 +17,10 @@ Run this command. It works for the first install and for every update after.
 A healthy run ends with one version line per harness and the drift check.
 
 ```text
-upstream: pstack 0.15.42
-claude: pstack 0.15.42
-codex: pstack 0.15.42
-grok: pstack 0.15.42
+upstream: pstack 0.15.43
+claude: pstack 0.15.43
+codex: pstack 0.15.43
+grok: pstack 0.15.43
 ok: every Cursor name pstack uses is mapped (...)
 ```
 
@@ -70,14 +70,13 @@ Every step is safe to rerun.
 
 | Role | Default |
 | --- | --- |
-| Judgment and prose | Claude `claude-opus-5-5`, effort `xhigh` |
-| Hardest tasks | Claude `claude-fable-5-2`, effort `max` |
 | Feature, refactoring, bug fix, and perf work | Codex latest Sol, `reasoningEffort: high` |
-| Swarm workers | Codex latest Sol, `reasoningEffort: medium` |
-| Arena, architect, and interrogate panels | Fable 5.2, Opus 5.5, and latest Sol, with Grok 4.7 as a fourth seat for decisions that are hard to reverse |
-| Cross-judge | A model from a provider other than the main agent's |
+| Judgment and prose | Claude `claude-opus-5-5`, effort `xhigh` |
+| Swarm workers and verification | Codex latest Sol, `reasoningEffort: medium` |
+| Arena and interrogate panels | Fable 5.2, Opus 5.5, and latest Sol at `high`, with Grok 4.7 as a fourth seat for decisions that are hard to reverse |
+| Cross-judge | Opus 5.5, then latest Sol, from a provider other than the main agent's |
 
-Every Codex Sol or Astra child runs with `serviceTier: "ultrafast"`.
+Codex Sol and Astra children run with `serviceTier: "ultrafast"`, and Opus 5.5 children with `fastMode: true`. No child runs above `xhigh`. Fable 5.2 runs outside a panel only when you name it, or after two Opus runs of the same brief fail.
 
 To override a role, add a line such as `swarm workers: codex/gpt-6.1-sol medium` to `~/.claude/rules/pstack-models.md`. Claude loads that folder on its own. Codex and Grok agents read the file when `harness-t3.md` tells them to.
 
@@ -128,7 +127,7 @@ The self-update restart worked against real git in a throwaway repo. It has not 
 
 ## Sources
 
-- **pstack** by Lauren Tan (poteto), MIT license, from [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Built against version 0.15.36, commit `3dbd22f`, and checked against 0.15.42, commit `bf0c7cd`. `harness-t3.md` follows the structure of pstack's `docs/harness/claude-code.md`.
+- **pstack** by Lauren Tan (poteto), MIT license, from [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Built against version 0.15.36, commit `3dbd22f`, and checked against 0.15.43, commit `2f87c85`. `harness-t3.md` follows the structure of pstack's `docs/harness/claude-code.md`.
 - **tstack** by Theo Browne, MIT license, from [t3dotgg/tstack](https://github.com/t3dotgg/tstack). No tstack skill is installed or called. These rules in `harness-t3.md` come from its skills.
 
 | Rule | tstack skill |

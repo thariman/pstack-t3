@@ -34,7 +34,7 @@ Before the first `delegate_task` in a thread, call `orchestrator_capabilities` o
 | Cursor | T3 Code |
 | --- | --- |
 | `subagent_type: generalPurpose` | Claude native: `general-purpose`. `delegate_task`: no field, the brief carries the role. |
-| `poteto-agent` | Same provider under Claude, or under Grok when it loads the Claude plugin: `pstack:poteto-agent`. Otherwise the brief's first line is `Read <abs path>/skills/poteto-mode/SKILL.md in full before any work, including its Principles index.` |
+| `poteto-agent` | Same provider under Claude, or under Grok when it loads the Claude plugin: `pstack:poteto-agent`. Otherwise the brief's second line is `Read <abs path>/skills/poteto-mode/SKILL.md in full before any work, including its Principles index.` |
 | `comment-sicko` | Same provider under Claude: `pstack:comment-sicko`. Otherwise the brief's first line is `Read <abs path>/agents/comment-sicko.md and act as that agent.` |
 | `readonly: true` | There is no read-only switch. Narrow `runtimeMode` values pause for human approval, so never use them for this. Claude native: `Explore`. `delegate_task`: `role: "review"` or `"research"` and the brief opens `Review only. Do not edit, commit, push, comment on PRs, or start subagents.` Run `git status --short` afterward. Do not edit files a reader still reads. |
 | `readonly: false` | Default. |
@@ -45,7 +45,7 @@ Before the first `delegate_task` in a thread, call `orchestrator_capabilities` o
 | `resume` | A new `delegate_task` with consolidated scope: the original brief, every later directive, and the prior report and branch. Never `t3_thread_send` to a child. `task_cancel` the run you replace. |
 | `file_attachments` | List the absolute paths in the brief. |
 
-A `delegate_task` child starts with no history. A Codex `spawn_agent` child inherits yours by default, but write the brief as if it did not. Each brief restates the user's goal and names the repo's absolute path, the base SHA, the scope, the checks already run, and the report format. No secrets. Children never call `watch_pull_request` and never start subagents unless the brief says to.
+Every brief, native or `delegate_task`, opens with `Read <abs path>/skills/poteto-mode/worker.md before anything else.` It carries the operator's rules, which load only from a slash command and reach a child no other way. A `delegate_task` child starts with no history. A Codex `spawn_agent` child inherits yours by default, but write the brief as if it did not. Each brief restates the user's goal and names the repo's absolute path, the base SHA, the scope, the checks already run, and the report format. No secrets. Children never call `watch_pull_request` and never start subagents unless the brief says to.
 
 ## Roles
 
@@ -53,14 +53,17 @@ Defaults below. Overrides live in `~/.claude/rules/pstack-models.md`, one `<role
 
 | pstack role | Default target in T3 |
 | --- | --- |
-| judgment and prose, reflect judgment | `claudeAgent` / `claude-opus-5-5`, effort `xhigh` |
-| hardest tasks | `claudeAgent` / `claude-fable-5-2`, effort `max` |
-| feature, refactoring, bug-fix, perf-issue, hillclimb | `codex` / latest Sol, `reasoningEffort: high` |
-| swarm workers, reflect tooling | `codex` / latest Sol, `reasoningEffort: medium` |
-| arena runners, architect runners, interrogate reviewers | `claude-fable-5-2 high`, `claude-opus-5-5 xhigh`, and latest Sol `xhigh`. Add `grok` / `grok-4.7 xhigh` as a fourth seat for one-way doors. |
-| arena cross-judge pool | Latest Sol `xhigh`, then `claude-fable-5-2 high`, then `claude-opus-5-5 xhigh`. The judge's provider must differ from yours. Fable and Opus are both Claude. |
+| feature, refactoring, bug-fix, perf-issue, hillclimb | `codex` / latest Sol, `reasoningEffort: high`, `serviceTier: "ultrafast"` |
+| judgment and prose | `claudeAgent` / `claude-opus-5-5`, effort `xhigh`, `fastMode: true` |
+| swarm workers, verification | `codex` / latest Sol, `reasoningEffort: medium`, `serviceTier: "ultrafast"` |
+| arena runners, interrogate reviewers | `claude-fable-5-2 high`, `claude-opus-5-5 high` with `fastMode: true`, and latest Sol `high` on ultrafast. Add `grok` / `grok-4.7 high` as a fourth seat for one-way doors. |
+| arena cross-judge pool | `claude-opus-5-5 high` with `fastMode: true`, then latest Sol `high`. The judge's provider must differ from yours. Fable and Opus are both Claude. |
 
-pstack's defaults put code on Opus and use Gemini as a panel seat. T3 has no Gemini, so Codex takes code and the Gemini seat here. Raise effort one step for the hardest work and lower it for routine work, per poteto-mode's Subagents section. Every Codex Sol or Astra child gets `serviceTier: "ultrafast"` in `options`. Other models use a fast tier (`fastMode` for Claude, the `serviceTier` value `orchestrator_capabilities` lists for the model) only when trunk is red or a person is blocked now.
+pstack's defaults put code on Opus and use Gemini as a panel seat. T3 has no Gemini, so Codex takes code and the Gemini seat here. Every Codex Sol or Astra child gets `serviceTier: "ultrafast"`, and every Opus 5.5 child gets `fastMode: true`.
+
+Fable 5.2 runs outside a panel only when the user named it for this task, or when two Opus 5.5 `xhigh` runs of the same brief failed its check. Say which. Difficulty alone never qualifies.
+
+Raise a role one step for the hardest work, lower it one step for judgment and two or more for routine work, per poteto-mode's Subagents section. Panel seats keep their listed level. No child runs above `xhigh`.
 
 ## Cursor-only features
 
