@@ -32,6 +32,7 @@ gate() {
 
 found=0
 pulled=""
+clone_fails=""
 if command -v claude >/dev/null; then
   found=1
   link "$src/skills/t3-mode" ~/.claude/skills/t3-mode
@@ -60,18 +61,7 @@ for h in codex grok; do
   found=1
   [ $h = grok ] && command -v claude >/dev/null && { echo "grok: uses Claude's t3-mode and pstack"; continue; }
   link "$src/skills/t3-mode" ~/.$h/skills/t3-mode
-  copies=("$HOME/.$h/skills/pstack")
-  [ "$h" != codex ] || copies+=("$HOME/.agents/skills/pstack")
-  for p in "${copies[@]}"; do
-    if [ -d "$p" ] && [ ! -L "$p" ]; then
-      backup="$HOME/.local/share/pstack-t3/backups/$h-$(basename "$(dirname "$(dirname "$p")")" | tr -d .)-pstack"
-      dest="$backup-$(date +%Y%m%d-%H%M%S)"
-      while [ -e "$dest" ]; do sleep 1; dest="$backup-$(date +%Y%m%d-%H%M%S)"; done
-      mkdir -p "$(dirname "$dest")"
-      mv "$p" "$dest"
-      echo "moved $p -> $dest"
-    fi
-  done
+  # Update or clone the managed copy first, so a pstack that fails the check never replaces one that works.
   if [ -n "$pulled" ]; then :
   elif [ -d "$plugins/.git" ]; then
     old=$(git -C "$plugins" rev-parse HEAD)
@@ -82,9 +72,28 @@ for h in codex grok; do
   else
     mkdir -p "$(dirname "$plugins")"
     git clone -q --depth 1 https://github.com/cursor/plugins "$plugins"
-    gate "$plugins/pstack" "$h" installed || true
   fi
+  [ -n "$pulled" ] || "$src/check.sh" "$plugins/pstack" >/dev/null 2>&1 || clone_fails=1
   pulled=1
+  copies=("$HOME/.$h/skills/pstack")
+  [ "$h" != codex ] || copies+=("$HOME/.agents/skills/pstack")
+  keep=""
+  for p in "${copies[@]}"; do
+    [ -d "$p" ] && [ ! -L "$p" ] || continue
+    if [ -n "$clone_fails" ]; then keep=1; continue; fi
+    backup="$HOME/.local/share/pstack-t3/backups/$h-$(basename "$(dirname "$(dirname "$p")")" | tr -d .)-pstack"
+    dest="$backup-$(date +%Y%m%d-%H%M%S)"
+    while [ -e "$dest" ]; do sleep 1; dest="$backup-$(date +%Y%m%d-%H%M%S)"; done
+    mkdir -p "$(dirname "$dest")"
+    mv "$p" "$dest"
+    echo "moved $p -> $dest"
+  done
+  if [ -n "$keep" ]; then
+    gate "$plugins/pstack" "$h" || true
+    echo "kept $h's own pstack folder. The installer takes it over once upstream matches t3-mode."
+    continue
+  fi
+  [ -z "$clone_fails" ] || gate "$plugins/pstack" "$h" installed || true
   link "$plugins/pstack" ~/.$h/skills/pstack
 done
 

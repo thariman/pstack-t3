@@ -21,7 +21,10 @@ Goal: keep `t3-mode` matched to the newest pstack, so every machine can take pst
    git -C <repo> worktree add -q ~/.local/share/pstack-t3-work/pstack-<version> -b pstack-<version> origin/main
    ```
 
-   If the branch exists, a pull request is already open for this version. Reply with its URL and stop.
+   If the branch exists, an earlier run started this version. Run `gh pr list --repo thariman/pstack-t3 --head pstack-<version> --state all --json url,state`.
+   - An open or merged pull request: reply with its URL and stop.
+   - A closed one: the user turned it down. Reply with its URL and stop.
+   - None: the earlier run stopped part way. Find its worktree with `git -C <repo> worktree list`, or add one for the existing branch with `git -C <repo> worktree add -q <path> pstack-<version>`, and continue from step 4 there.
 
 4. Find what changed. The first line of `<repo>/pstack-verified.txt` names the version last read by hand. Find that version's commit with `git -C <upstream> log --format=%h -S'"version": "<old>"' -- pstack/plugin.json | tail -1`. Read `git -C <upstream> diff <old commit> origin/main -- pstack` for every file the check or the `review:` line names, and read the rest of the diff's stat.
 

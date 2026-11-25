@@ -148,6 +148,16 @@ grep -q '^pstack update held (codex): ' "$tmp/output"
 grep -q '^  missing in pstack: skills/poteto-mode/worker.md$' "$tmp/output"
 grep -q '^codex: pstack 0.15.37$' "$tmp/output"
 [ -f "$HOME/.codex/skills/pstack/skills/poteto-mode/worker.md" ]
+HOME=$(mktemp -d "$tmp/home-h.XXXXXX")
+mkdir -p "$HOME/.codex/skills"
+cp -R "$tmp/fixture" "$HOME/.codex/skills/pstack"
+for pass in 1 2; do
+  run h
+  grep -q "^kept codex's own pstack folder" "$tmp/output"
+  [ -d "$HOME/.codex/skills/pstack" ] && [ ! -L "$HOME/.codex/skills/pstack" ]
+  [ -f "$HOME/.codex/skills/pstack/skills/poteto-mode/worker.md" ]
+  [ ! -d "$HOME/.local/share/pstack-t3/backups" ]
+done
 HOME=$(mktemp -d "$tmp/home-p.XXXXXX")
 "$src/profile.sh" check
 "$src/profile.sh" use budget > /dev/null
@@ -160,8 +170,11 @@ printf 'bug-fix: codex/latest-sol high fast\n' > "$HOME/.config/pstack-t3/profil
 "$src/profile.sh" show mine > "$tmp/prof"; grep -q '^hillclimb  *codex/latest-sol high ultrafast$' "$tmp/prof"
 if "$src/profile.sh" use mine > "$tmp/lint" 2>&1; then exit 1; fi
 grep -q 'fast is Claude only' "$tmp/lint"
+: > "$HOME/.config/pstack-t3/profiles/empty.md"
+"$src/profile.sh" show empty > "$tmp/prof"; grep -q '^hillclimb  *codex/latest-sol high ultrafast$' "$tmp/prof"
+grep -q 'fast is Claude only' "$tmp/lint"
 printf 'nope: none\nbug-fix: grok/grok-4.7 mega standard\n' > "$HOME/.config/pstack-t3/profiles/mine.md"
 if "$src/profile.sh" check > "$tmp/lint" 2>&1; then exit 1; fi
 grep -q 'unknown role "nope"' "$tmp/lint"
 grep -q 'unknown effort "mega"' "$tmp/lint"
-printf '\nPASS: cases a-g, pstack gate for Claude and Codex, review notice, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles\n'
+printf '\nPASS: cases a-h, no takeover by a failing pstack, pstack gate for Claude and Codex, review notice, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles, empty profile\n'

@@ -59,7 +59,7 @@ case "${1:-list}" in
     name=${2:-$(active_name)}; f=$(find_profile "$name")
     echo "profile: $name ($f)"
     # Roles the profile leaves out keep the default profile's line.
-    awk 'NR == FNR { if ($0 !~ /^#/ && index($0, ": ")) over[substr($0, 1, index($0, ": ") - 1)] = substr($0, index($0, ": ") + 2); next }
+    awk 'FILENAME == ARGV[1] { if ($0 !~ /^#/ && index($0, ": ")) over[substr($0, 1, index($0, ": ") - 1)] = substr($0, index($0, ": ") + 2); next }
          /^#/ || !index($0, ": ") { next }
          { role = substr($0, 1, index($0, ": ") - 1); v = (role in over) ? over[role] : substr($0, index($0, ": ") + 2)
            n = split(v, seats, ", "); printf "%-24s %s\n", role, seats[1]; for (s = 2; s <= n; s++) printf "%-24s %s\n", "", seats[s] }' \
