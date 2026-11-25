@@ -14,9 +14,11 @@ Run this command. It works for the first install and for every update after.
 [ -d ~/.local/share/pstack-t3 ] || git clone https://github.com/thariman/pstack-t3 ~/.local/share/pstack-t3; ~/.local/share/pstack-t3/install.sh
 ```
 
-A healthy run ends with one version line per harness and the drift check.
+The first line names the harnesses the installer found. It installs only for those and skips the rest. A healthy run ends with one version line per harness it found and the drift check.
 
 ```text
+harnesses on this machine: claude codex grok agy
+...
 upstream: pstack 0.15.48
 claude: pstack 0.15.48
 codex: pstack 0.15.48
@@ -51,6 +53,8 @@ Typing `/pstack:poteto-mode` alone skips the translation table. The agent then g
 | Grok, without Claude | Same as Codex, with `~/.grok/skills/pstack`. | Same as Codex. |
 | Antigravity | Uses the same managed clone as Codex, and writes `~/.gemini/config/skills.json` to list this repo's `skills` folder and the clone's `pstack/skills`. | Same as Codex. Leaves a `skills.json` it did not write alone and prints the two entries to add. |
 
+A harness counts as installed when its command is on `PATH`. Antigravity also counts when T3 Code ships its own copy in `~/.t3/userdata/providers/antigravity`, which reads the same `skills.json`.
+
 It also links `t3-mode` into `~/.claude/skills`, `~/.codex/skills`, and, on machines without Claude, `~/.grok/skills`.
 
 If a real pstack folder sits in `~/.codex/skills`, `~/.agents/skills`, or `~/.grok/skills`, the installer moves it to `~/.local/share/pstack-t3/backups/<harness>-<folder>-pstack-<timestamp>` and links the managed clone in its place. The backup lives outside every skills folder, so no harness loads pstack twice. When the managed clone fails the check, the installer leaves your folder where it is and prints `kept <harness>'s own pstack folder`.
@@ -71,7 +75,7 @@ Every step is safe to rerun.
 | `profile.sh` | Lists, shows, switches, and checks profiles. |
 | `check.sh` | Fails when pstack uses a Cursor subagent field that `harness-t3.md` does not map, drops a file `t3-mode` reads, or adds or removes a model role. Takes an optional pstack path. `--record` marks a pstack as read and verified. |
 | `pstack-verified.txt` | The last pstack read and verified by hand, with checksums of the files `t3-mode` follows closely. |
-| `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries and a local git repo standing in for upstream. Covers takeover, rerun, a failed Claude update, updates held for Claude and Codex, a working folder kept when upstream fails the check, Grok inheritance, offline upstream, the self-update restart, the `review:` notice, profiles, and this README's version lines and file list. |
+| `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries and a local git repo standing in for upstream. Covers harness detection, takeover, rerun, a failed Claude update, updates held for Claude and Codex, a working folder kept when upstream fails the check, Grok inheritance, offline upstream, the self-update restart, the `review:` notice, profiles, and this README's version lines and file list. |
 | `upstream-job.md` | The brief the daily upstream job runs. |
 | `LICENSE` | MIT. |
 
@@ -104,6 +108,8 @@ arena runners: claudeAgent/claude-opus-5-5 high fast, codex/latest-sol high ultr
 ```
 
 Providers are `claudeAgent`, `codex`, `grok`, and `antigravity` for Gemini. A model is any id `orchestrator_capabilities` lists, or `latest-sol`. Effort is `low` through `max`. Speed is `standard`, `fast` (Claude only), or `ultrafast` (Codex Sol and Astra only).
+
+Profiles name providers a machine may not have. At run time `t3-mode` asks T3 which providers can run, and moves each seat on a missing provider to the first available one in the order Codex Sol, Opus 5.5, Gemini 4 Neon, Grok 4.7. A panel replaces a missing seat with a provider it does not have yet, and drops a seat only when nothing on the machine can run it. Each move is printed, as in `Seat moved: arena runners, grok/grok-4.7 is not available here, using antigravity/gemini-4-neon high standard.` So one profile works on every machine.
 
 `t3-mode` ignores pstack's own `/setup-pstack` file, `~/.claude/rules/pstack-models.md`. Change models with a profile instead.
 

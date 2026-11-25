@@ -1,5 +1,5 @@
-# t3-mode profile: default. Four-vendor panels, code on Codex Sol.
-# Line: <role>: <provider>/<model> <effort> <speed>. Commas separate panel seats. `none` drops the role or seat.
+# t3-mode profile: default. Code on Codex Sol, four-seat panels across three vendors, Grok added for one-way doors.
+# Line: <roles>: <seats>. Commas on the left join roles that share a line. On the right each seat is <provider>/<model> <effort> <speed>, commas between seats. `none` drops the role or seat.
 # provider: claudeAgent, codex, grok, antigravity (Gemini). model: an id from orchestrator_capabilities, or latest-sol.
 # effort: low, medium, high, xhigh, max. speed: standard, fast (Claude), ultrafast (Codex Sol and Astra).
 feature, refactoring: codex/latest-sol high ultrafast

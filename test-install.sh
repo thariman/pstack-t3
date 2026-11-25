@@ -188,7 +188,17 @@ printf '{ "entries": [ { "path": "~/mine" } ] }\n' > "$HOME/.gemini/config/skill
 run i
 grep -q "^skip $HOME/.gemini/config/skills.json: it is not the installer's" "$tmp/output"
 [ "$(cat "$HOME/.gemini/config/skills.json")" = '{ "entries": [ { "path": "~/mine" } ] }' ]
+grep -q '^harnesses on this machine: codex grok agy\. Not here, skipped: claude$' "$tmp/output"
 rm "$tmp/bin/agy"
+HOME=$(mktemp -d "$tmp/home-j.XXXXXX")
+run j
+grep -q '^harnesses on this machine: codex grok\. Not here, skipped: claude agy$' "$tmp/output"
+[ ! -e "$HOME/.gemini" ]
+if grep -q '^agy:' "$tmp/output"; then exit 1; fi
+mkdir -p "$HOME/.t3/userdata/providers/antigravity"
+run j
+grep -q '^harnesses on this machine: codex grok agy\.' "$tmp/output"
+grep -qF "\"$tmp/repo/skills\"" "$HOME/.gemini/config/skills.json"
 HOME=$(mktemp -d "$tmp/home-p.XXXXXX")
 "$src/profile.sh" check
 "$src/profile.sh" use budget > /dev/null
@@ -212,4 +222,4 @@ printf 'nope: none\nbug-fix: grok/grok-4.7 mega standard\n' > "$HOME/.config/pst
 if "$src/profile.sh" check > "$tmp/lint" 2>&1; then exit 1; fi
 grep -q 'unknown role "nope"' "$tmp/lint"
 grep -q 'unknown effort "mega"' "$tmp/lint"
-printf '\nPASS: cases a-i, Antigravity skills.json, no takeover by a failing pstack, pstack gate for Claude and Codex, review notice, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles, empty and default profiles\n'
+printf '\nPASS: cases a-j, harness detection including the Antigravity bundled with T3, Antigravity skills.json, no takeover by a failing pstack, pstack gate for Claude and Codex, review notice, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles, empty and default profiles\n'

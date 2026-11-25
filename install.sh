@@ -14,6 +14,12 @@ if [ -z "${PSTACK_T3_RESTARTED:-}" ] && [ "$after" != "$before" ]; then
   PSTACK_T3_RESTARTED=1 exec bash "$src/install.sh" "$@"
 fi
 
+# A harness is installed when its command is on PATH. T3 Code also ships its own Antigravity.
+has() { command -v "$1" >/dev/null || { [ "$1" = agy ] && [ -d ~/.t3/userdata/providers/antigravity ]; }; }
+have=""; missing=""
+for h in claude codex grok agy; do if has $h; then have="$have $h"; else missing="$missing $h"; fi; done
+echo "harnesses on this machine:${have:- none}${missing:+. Not here, skipped:$missing}"
+
 link() {
   mkdir -p "$(dirname "$2")"
   if [ -L "$2" ] || [ ! -e "$2" ]; then ln -sfn "$1" "$2" && echo "linked $2 -> $1"
@@ -69,7 +75,7 @@ agy_skills() {
 # Codex, Grok, and Antigravity load pstack from the managed clone. Grok also reads ~/.claude/skills and
 # Claude plugins, so with Claude present it already has both, and linking again would load pstack twice.
 for h in codex grok agy; do
-  command -v $h >/dev/null || continue
+  has $h || continue
   found=1
   [ $h = grok ] && command -v claude >/dev/null && { echo "grok: uses Claude's t3-mode and pstack"; continue; }
   [ $h = agy ] || link "$src/skills/t3-mode" ~/.$h/skills/t3-mode
@@ -122,7 +128,7 @@ upstream=${upstream:-unknown}
 echo "upstream: pstack $upstream"
 claude_version=""
 for h in claude codex grok agy; do
-  command -v "$h" >/dev/null || continue
+  has "$h" || continue
   if [ "$h" = claude ]; then
     listing=$(claude plugin list 2>/dev/null) || listing=""
     v=$(sed -n '/pstack@cursor-plugins/,/Version:/{s/.*Version:[[:space:]]*//p;}' <<<"$listing" | sed -n '1p')

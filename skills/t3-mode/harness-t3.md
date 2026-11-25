@@ -6,16 +6,16 @@ The main difference from plain Claude Code is model routing. Plain Claude Code c
 
 ## Routing a spawn
 
-Pick the target model first (see Roles). Then pick the tool.
+Before you resolve the first seat in a thread, call `orchestrator_capabilities` once and reuse its result. Resolve the target model and options first (see Roles). Then pick the tool.
 
 | Target | Tool |
 | --- | --- |
-| Same provider as you, no settings beyond yours, no worktree | Native subagent. Claude: `Agent` with `run_in_background: false`, several in one message for a fan-out. Codex: `spawn_agent`, then wait. Grok: `spawn_subagent`, then `get_command_or_subagent_output`. Grok children run on your model. Antigravity: `invoke_subagent` with `Model: "inherit"`. It has no wait tool, and the result arrives as a message, so end your turn or do other work until it does. |
+| Same provider as you, a model and options your native tool can set exactly, no worktree | Native subagent. Claude: `Agent` with `run_in_background: false`, several in one message for a fan-out. Codex: `spawn_agent`, then wait. Grok: `spawn_subagent`, then `get_command_or_subagent_output`. Grok children run on your model. Antigravity: `invoke_subagent` with `Model: "inherit"`. It has no wait tool, and the result arrives as a message, so end your turn or do other work until it does. |
 | Another provider, a non-default effort the native tool cannot set, a separate checkout, or work that should outlive your turn | `delegate_task`. |
 
-Before the first `delegate_task` in a thread, call `orchestrator_capabilities` once. Resolve "latest Sol" or any family name from its list. Never guess a model id. If a provider or model is missing or unauthenticated, say so and drop the seat. Do not substitute another model, and do not fall back to a CLI.
+Resolve "latest Sol" or any family name from its list. Never guess a model id. When a provider or model is missing, follow **Use what this machine has** under Roles. Never fall back to a CLI.
 
-`delegate_task` fields: `task` (the whole brief), `role` (`review`, `research`, `implementation`, `design`, `test`, `general`), `mode: "async"`, `target: {providerInstanceId, model, options}`, a fresh `clientRequestId` per spawn. Effort lives in `options`. The key is `effort` for Claude and `reasoningEffort` for Codex and Grok. Keep the returned `taskId`.
+`delegate_task` fields: `task` (the whole brief), `role` (`review`, `research`, `implementation`, `design`, `test`, `general`), `mode: "async"`, `target: {providerInstanceId, model, options}`, a fresh `clientRequestId` per spawn. Effort lives in `options`. The key is `effort` for Claude, `reasoningEffort` for Codex and Grok, and `thought_level` for Antigravity. Keep the returned `taskId`.
 
 ## Tools
 
@@ -51,17 +51,27 @@ Every brief, native or `delegate_task`, opens with `Read <abs path>/skills/potet
 
 Each child's model, effort, and speed come from a profile. Read `profiles/default.md` next to this file, then `~/.config/pstack-t3/active.md` if it exists. A role line in the active profile replaces the default's line, and a role it leaves out keeps the default. When the user names a profile in the task, such as `/t3-mode profile=budget`, read `~/.config/pstack-t3/profiles/<name>.md` or `profiles/<name>.md` instead of the active one, for this task only. In `t3-mode`, the profile replaces `~/.claude/rules/pstack-models.md`. Ignore that file's lines.
 
-A line is `<role>: <provider>/<model> <effort> <speed>`. Commas separate panel seats, one child per seat. `none` drops the role or seat, and a dropped cross-judge means arena picks its base alone and says so.
+A line is `<roles>: <seats>`. Split it at the first colon. On the left, commas separate role names that share the line. On the right, commas separate seats, one child per seat, each `<provider>/<model> <effort> <speed>`. `none` drops the role or seat, and a dropped cross-judge means arena picks its base alone and says so.
 
 - `provider` is the `providerInstanceId`. `latest-sol` means the newest Sol id that `orchestrator_capabilities` lists.
 - `effort` goes in `options` as `effort` for `claudeAgent`, `reasoningEffort` for `codex` and `grok`, and `thought_level` for `antigravity`.
-- `speed` `fast` is `fastMode: true`, `ultrafast` is `serviceTier: "ultrafast"`, and `standard` sets neither.
-- `one-way door seat` joins every arena and interrogate panel on a decision that is hard to reverse.
+- `speed` `fast` is `fastMode: true`, `ultrafast` is `serviceTier: "ultrafast"`, and `standard` is `fastMode: false` for Claude and `serviceTier: "default"` for Codex, set explicitly because Sol can default to ultrafast.
+- `one-way door seat` is appended to every arena and interrogate panel on a decision that is hard to reverse, before missing seats are resolved, and follows the same rules as the other seats.
 - Trivial mechanical edits and verification use `swarm workers`.
 
 pstack's own defaults put code on Opus. The default profile gives code to Codex Sol and adds Sol as a fourth panel seat next to pstack's Fable, Opus, and Gemini. Fable 5.2 runs outside a panel only when the user named it for this task, the profile puts it on that role, or two Opus 5.5 `xhigh` runs of the same brief failed its check. Say which. Difficulty alone never qualifies.
 
-Raise a role one step for the hardest work, lower it one step for judgment and two or more for routine work, per poteto-mode's Subagents section. Panel seats keep their listed level. Never go above the profile's effort unless the user asks.
+**Use what this machine has.** Machines differ in which providers T3 can run. A target is runnable when its provider reports `canRunChildTask: true` and no constraints, also `canRunCrossProviderChildTask: true` when it is not your provider, and lists the model. When a model is missing and the provider reports omitted models, call `orchestrator_capabilities` with `search` before you call it missing. `latest-sol` is the highest-numbered Sol id on `codex`. The user asked `t3-mode` to fill a gap instead of dropping work, so for each seat that is not runnable:
+
+1. Try the fallback order, skipping targets that are not runnable: `codex` / latest Sol, `claudeAgent` / `claude-opus-5-5`, `antigravity` / `gemini-4-neon`, `grok` / `grok-4.7`.
+2. A one-seat role takes the first runnable target. With none, do the work yourself and say so.
+3. A panel keeps every runnable seat and replaces each missing seat, in profile order, with the first runnable target whose provider is not on the panel yet, then one whose model is not on it yet, then any runnable target. Each replacement is its own child. Print `Seat dropped: <seat>, nothing here can run it.` only when no target runs.
+4. The cross-judge takes the first runnable pool entry whose `providerInstanceId` differs from yours, with that entry's effort and speed. With none, it takes the first runnable fallback target on another provider at `high` and standard speed. With none, arena picks its base alone and says so.
+5. A moved seat keeps its effort when the substitute lists it, or takes the highest listed effort below it. A fast speed maps to `fastMode: true` on Opus 5.5 and `serviceTier: "ultrafast"` on Codex Sol and Astra. Every other case is standard speed, set explicitly where the model offers it: `fastMode: false` for Claude, `serviceTier: "default"` for Codex.
+
+Print one line per seat whose target changed, with role, old target, new target, effort, and speed, such as `Seat moved: arena runners, grok/grok-4.7 is not available here, using antigravity/gemini-4-neon high standard.` Never move a seat silently.
+
+A panel seat runs at its profile effort. For any other role, the profile effort is the ceiling. Use it for the hardest work, one step below for judgment, and two or more below for routine work, per poteto-mode's Subagents section. Go above the profile only when the user asks.
 
 ## Cursor-only features
 
