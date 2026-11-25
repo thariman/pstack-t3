@@ -155,7 +155,7 @@ These ran on real machines, not only in tests.
 | Machine | OS | Result |
 | --- | --- | --- |
 | Desktop | Linux | Update path and takeover of a stray Codex copy. Updated through 0.15.43 on 2026-11-18. A Gemini 4 Neon child answered through `antigravity` on 2026-11-25. The same day, an Antigravity thread ran `/t3-mode` on a read-only question. It found pstack 0.15.48, read `harness-t3.md`, `poteto-mode`, and the Investigation playbook, and named the right Antigravity tools. |
-| Laptop | Linux | Update path. All harnesses at 0.15.36 on 2026-11-14. |
+| Laptop | Linux | Update path. All harnesses at 0.15.36 on 2026-11-14. On 2026-11-25 it found all four harnesses, all at 0.15.48 with Antigravity's `skills.json` in place, and a rerun changed nothing. |
 | MacBook | macOS | First install for Claude and Codex, at 0.15.36 on 2026-11-14. Passed under Homebrew bash 5.2 and under `/bin/bash` 3.2. On 2026-11-25 it found all four harnesses, gated and installed 0.15.48 for each, and wrote Antigravity's `skills.json`. A rerun changed nothing. A run under `/bin/bash` 3.2 pulled a newer installer and restarted itself once, the first self-update restart on a real machine. |
 
 The daily job's brief ran once for real on 2026-11-25 against 0.15.48. It opened [pull request #1](https://github.com/thariman/pstack-t3/pull/1), got a Codex Sol review, and sent the Telegram message. Its three wording mistakes are fixed.
