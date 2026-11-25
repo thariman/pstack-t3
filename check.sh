@@ -38,7 +38,9 @@ for r in $(comm -13 <(echo "$ours") <(echo "$pstack_roles") | tr ' ' '~'); do ec
 
 # The files t3-mode follows closely. A change in them needs a person or a review agent to read it.
 watched="skills/poteto-mode/SKILL.md skills/poteto-mode/worker.md skills/setup-pstack/SKILL.md docs/harness/claude-code.md agents/poteto-agent.md agents/comment-sicko.md"
-sums() { (cd "$pstack" && for f in $watched; do if [ -f "$f" ]; then cksum "$f"; fi; done); }
+# Claude's marketplace installs a generated copy that adds an adapter paragraph to some skills. Drop it, so both copies hash alike.
+strip() { awk '/^In Claude Code, read \[the Claude Code adapter\]/ { skip = 1; next } skip && /^$/ { skip = 0; next } { skip = 0; print }' "$1"; }
+sums() { (cd "$pstack" && for f in $watched; do if [ -f "$f" ]; then echo "$(strip "$f" | cksum) $f"; fi; done); }
 version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$pstack/plugin.json" 2>/dev/null | sed -n '1p')
 
 [ $missing = 0 ] || exit 1
