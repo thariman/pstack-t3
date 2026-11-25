@@ -1,7 +1,7 @@
-# pstack 0.15.43, read and verified by hand
-2727970144 11415 skills/poteto-mode/SKILL.md
+# pstack 0.15.48, read and verified by hand
+3456695650 11238 skills/poteto-mode/SKILL.md
 1347368744 1352 skills/poteto-mode/worker.md
-2876774334 8247 skills/setup-pstack/SKILL.md
-2011229101 6021 docs/harness/claude-code.md
+3558508004 8751 skills/setup-pstack/SKILL.md
+2720858414 6020 docs/harness/claude-code.md
 3057934881 1350 agents/poteto-agent.md
 3391134517 2219 agents/comment-sicko.md

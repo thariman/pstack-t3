@@ -17,10 +17,10 @@ Run this command. It works for the first install and for every update after.
 A healthy run ends with one version line per harness and the drift check.
 
 ```text
-upstream: pstack 0.15.43
-claude: pstack 0.15.43
-codex: pstack 0.15.43
-grok: pstack 0.15.43
+upstream: pstack 0.15.48
+claude: pstack 0.15.48
+codex: pstack 0.15.48
+grok: pstack 0.15.48
 ok: every Cursor name, file, and role t3-mode uses matches pstack (...)
 ```
 
@@ -151,7 +151,7 @@ The self-update restart worked against real git in a throwaway repo. It has not 
 
 ## Sources
 
-- **pstack** by Lauren Tan (poteto), MIT license, from [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Built against version 0.15.36, commit `3dbd22f`, and checked against 0.15.43, commit `2f87c85`. `harness-t3.md` follows the structure of pstack's `docs/harness/claude-code.md`.
+- **pstack** by Lauren Tan (poteto), MIT license, from [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Built against version 0.15.36, commit `3dbd22f`, and checked against 0.15.48, commit `9e278fe`. `harness-t3.md` follows the structure of pstack's `docs/harness/claude-code.md`.
 - **tstack** by Theo Browne, MIT license, from [t3dotgg/tstack](https://github.com/t3dotgg/tstack). No tstack skill is installed or called. These rules in `harness-t3.md` come from its skills.
 
 | Rule | tstack skill |
