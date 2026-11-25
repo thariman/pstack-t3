@@ -79,6 +79,9 @@ run b
 [ "$(backup_count)" = 1 ]
 grep -q '^codex: pstack 0.15.37$' "$tmp/output"
 grep -q '^review: since pstack 0.15.36, pstack changed skills/poteto-mode/worker.md\.' "$tmp/output"
+cp -R "$tmp/fixture" "$tmp/older"; printf '{"version":"0.15.30"}\n' > "$tmp/older/plugin.json"; printf 'old wording\n' > "$tmp/older/skills/poteto-mode/worker.md"
+"$tmp/repo/check.sh" "$tmp/older" > "$tmp/older.out"
+if grep -q '^review:' "$tmp/older.out"; then exit 1; fi
 grep -q -- '-C .*cursor-plugins pull -q --ff-only' "$tmp/git.log"
 cat > "$tmp/bin/claude" <<'STUB'
 #!/bin/bash
