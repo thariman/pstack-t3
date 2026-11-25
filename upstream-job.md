@@ -4,7 +4,7 @@ Goal: keep `t3-mode` matched to the newest pstack, so every machine can take pst
 
 `<repo>` is `~/projects/pstack-t3`. `<upstream>` is `~/research/stacks/cursor-plugins`, a clone of `github.com/cursor/plugins`.
 
-1. Get the newest pstack.
+1. Clean up, then get the newest pstack. For each worktree under `~/.local/share/pstack-t3-work/` whose branch's pull request is merged or closed, run `git -C <repo> worktree remove <path>` and `git -C <repo> branch -D <branch>`.
 
    ```bash
    git -C <repo> fetch -q origin
@@ -53,4 +53,4 @@ Goal: keep `t3-mode` matched to the newest pstack, so every machine can take pst
    EOF
    ```
 
-9. Reply with the pull request URL, the head commit, and the review's state. Leave the worktree in place until the pull request merges.
+9. Reply with the pull request URL, the head commit, and the review's state. Leave the worktree in place. The next run removes it once the pull request merges.
