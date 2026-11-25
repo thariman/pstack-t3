@@ -11,7 +11,7 @@ git -C "$src" pull -q --ff-only 2>/dev/null || echo "note: could not pull $src, 
 after=$(git -C "$src" rev-parse HEAD 2>/dev/null) || after=""
 if [ -z "${PSTACK_T3_RESTARTED:-}" ] && [ "$after" != "$before" ]; then
   echo "updated pstack-t3 to ${after:0:7}, restarting the installer"
-  PSTACK_T3_RESTARTED=1 exec bash "$src/install.sh" "$@"
+  PSTACK_T3_RESTARTED=1 exec "$BASH" "$src/install.sh" "$@"
 fi
 
 # A harness is installed when its command is on PATH. T3 Code also ships its own Antigravity.
