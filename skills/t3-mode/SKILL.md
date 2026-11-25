@@ -1,6 +1,6 @@
 ---
 name: t3-mode
-description: Run pstack's poteto-mode inside T3 Code, routing subagents across Claude and Codex with delegate_task. Use for /t3-mode, "t3 mode", "poteto-mode in t3", or before any pstack skill in a T3 Code thread.
+description: Run pstack's poteto-mode inside T3 Code, routing subagents across Claude, Codex, Gemini, and Grok with delegate_task. Use for /t3-mode, "t3 mode", "poteto-mode in t3", or before any pstack skill in a T3 Code thread.
 ---
 
 # T3 mode
@@ -9,7 +9,7 @@ description: Run pstack's poteto-mode inside T3 Code, routing subagents across C
 
    ```bash
    ls -d ~/.claude/plugins/cache/cursor-plugins/pstack/*/ 2>/dev/null | sort -V | tail -1
-   ls -d ~/.codex/skills/pstack/ ~/.grok/skills/pstack/ ~/.agents/skills/pstack/ 2>/dev/null | head -1
+   ls -d ~/.codex/skills/pstack/ ~/.grok/skills/pstack/ ~/.agents/skills/pstack/ ~/.local/share/cursor-plugins/pstack/ 2>/dev/null | head -1
    ```
 
    That folder is `<pstack>`. If neither prints, stop and tell the user to install pstack.

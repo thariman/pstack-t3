@@ -11,6 +11,8 @@ user_dir=~/.config/pstack-t3/profiles
 active=~/.config/pstack-t3/active.md
 
 find_profile() {
+  # A regular file at active.md is a profile written in place, and agents read it as one.
+  [ "$1" != active.md ] || [ -L "$active" ] || [ ! -f "$active" ] || { echo "$active"; return; }
   for d in "$user_dir" "$builtin_dir"; do
     [ -f "$d/$1.md" ] && { echo "$d/$1.md"; return; }
   done
@@ -18,7 +20,9 @@ find_profile() {
 }
 
 active_name() {
-  if [ -L "$active" ]; then basename "$(readlink "$active")" .md; else echo default; fi
+  if [ -L "$active" ]; then basename "$(readlink "$active")" .md
+  elif [ -f "$active" ]; then echo active.md
+  else echo default; fi
 }
 
 # Prints problems in a profile, one per line. Prints nothing when it is valid.
@@ -59,11 +63,11 @@ case "${1:-list}" in
     name=${2:-$(active_name)}; f=$(find_profile "$name")
     echo "profile: $name ($f)"
     # Roles the profile leaves out keep the default profile's line.
-    awk 'FILENAME == ARGV[1] { if ($0 !~ /^#/ && index($0, ": ")) over[substr($0, 1, index($0, ": ") - 1)] = substr($0, index($0, ": ") + 2); next }
+    awk -v profile="$f" 'BEGIN { while ((getline l < profile) > 0) if (l !~ /^#/ && index(l, ": ")) over[substr(l, 1, index(l, ": ") - 1)] = substr(l, index(l, ": ") + 2) }
          /^#/ || !index($0, ": ") { next }
          { role = substr($0, 1, index($0, ": ") - 1); v = (role in over) ? over[role] : substr($0, index($0, ": ") + 2)
            n = split(v, seats, ", "); printf "%-24s %s\n", role, seats[1]; for (s = 2; s <= n; s++) printf "%-24s %s\n", "", seats[s] }' \
-      "$f" "$builtin_dir/default.md" ;;
+      "$builtin_dir/default.md" ;;
   use)
     [ -n "${2:-}" ] || { echo "usage: profile.sh use <name>"; exit 1; }
     f=$(find_profile "$2"); problems=$(lint "$f")

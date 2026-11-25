@@ -1,12 +1,12 @@
 # pstack-t3
 
-`pstack-t3` runs [pstack](https://github.com/cursor/plugins/tree/main/pstack)'s `poteto-mode` inside [T3 Code](https://github.com/pingdotgg/t3code), with Claude, Codex, or Grok as the main agent. Its multi-model reviews run on real Claude, Codex, Gemini, and Grok models through T3's `delegate_task`, instead of collapsing onto one model.
+`pstack-t3` runs [pstack](https://github.com/cursor/plugins/tree/main/pstack)'s `poteto-mode` inside [T3 Code](https://github.com/pingdotgg/t3code), with Claude, Codex, Grok, or Antigravity as the main agent. Its multi-model reviews run on real Claude, Codex, Gemini, and Grok models through T3's `delegate_task`, instead of collapsing onto one model.
 
 It does not copy pstack. It adds one skill, `t3-mode`, that loads pstack, a translation table for T3, and a model profile. pstack updates reach you without a re-port, and the installer holds back any update that does not match `t3-mode` yet.
 
 ## Install or update on any machine
 
-You need `git`, `curl`, and at least one of `claude`, `codex`, or `grok`.
+You need `git`, `curl`, and at least one of `claude`, `codex`, `grok`, or `agy` (Antigravity).
 
 Run this command. It works for the first install and for every update after.
 
@@ -21,6 +21,7 @@ upstream: pstack 0.15.48
 claude: pstack 0.15.48
 codex: pstack 0.15.48
 grok: pstack 0.15.48
+agy: pstack 0.15.48
 ok: every Cursor name, file, and role t3-mode uses matches pstack (...)
 ```
 
@@ -34,7 +35,7 @@ Restart open Claude sessions after an update. `claude plugin update` applies on 
 
 ## Use it
 
-Type `/t3-mode <task>` in a Claude or Grok thread, or `$t3-mode <task>` in Codex. The agent finds pstack, reads `harness-t3.md`, then runs `poteto-mode` on your task.
+Type `/t3-mode <task>` in a Claude, Grok, or Antigravity thread, or `$t3-mode <task>` in Codex. The agent finds pstack, reads `harness-t3.md`, then runs `poteto-mode` on your task.
 
 Retype `/t3-mode` at the start of each new task in a thread. The instructions stay in the thread's history, but agents follow them less closely as the thread grows, and long threads get summarized. A new thread always needs it again.
 
@@ -48,6 +49,7 @@ Typing `/pstack:poteto-mode` alone skips the translation table. The agent then g
 | Codex | Clones `cursor/plugins` to `~/.local/share/cursor-plugins` and links `~/.codex/skills/pstack` to it. | Pulls that clone and checks it. If the check fails, it moves the clone back to the commit it had. |
 | Grok, with Claude installed | Nothing. Grok reads `~/.claude/skills` and Claude's installed plugins. | Updated through Claude. |
 | Grok, without Claude | Same as Codex, with `~/.grok/skills/pstack`. | Same as Codex. |
+| Antigravity | Uses the same managed clone as Codex, and writes `~/.gemini/config/skills.json` to list this repo's `skills` folder and the clone's `pstack/skills`. | Same as Codex. Leaves a `skills.json` it did not write alone and prints the two entries to add. |
 
 It also links `t3-mode` into `~/.claude/skills`, `~/.codex/skills`, and, on machines without Claude, `~/.grok/skills`.
 
@@ -126,12 +128,14 @@ Providers are `claudeAgent`, `codex`, `grok`, and `antigravity` for Gemini. A mo
 
 **Each harness names its tools differently.** Live children inside T3 confirmed these names. Two of them corrected names copied from Grok's README, which documents a different route.
 
-| Job | Claude | Codex | Grok |
-| --- | --- | --- | --- |
-| Start a same-provider helper | `Agent` | `spawn_agent` | `spawn_subagent` |
-| Wait for it | Returns in the same turn | `wait_agent` | `get_command_or_subagent_output` |
-| Todo list | `TodoWrite` | `update_plan` | `todo_write` |
-| Ask the user | `AskUserQuestion` | `request_user_input_async`, or `request_user_input` in Plan mode | `ask_user_question` |
+| Job | Claude | Codex | Grok | Antigravity |
+| --- | --- | --- | --- | --- |
+| Start a same-provider helper | `Agent` | `spawn_agent` | `spawn_subagent` | `invoke_subagent` |
+| Wait for it | Returns in the same turn | `wait_agent` | `get_command_or_subagent_output` | No wait tool. The result arrives as a message |
+| Todo list | `TodoWrite` | `update_plan` | `todo_write` | `update_steps` |
+| Ask the user | `AskUserQuestion` | `request_user_input_async`, or `request_user_input` in Plan mode | `ask_user_question` | `ask_question` |
+
+**Antigravity reads skills from its own list.** It never looks in `~/.claude/skills`, `~/.codex/skills`, or `~/.agents/skills`. It loads global skills only from `~/.gemini/config/skills/` or from folders named in `~/.gemini/config/skills.json`, so the installer writes that file instead of linking. Its skill list hides `poteto-mode`, because pstack marks it `disable-model-invocation`. That does not matter, because `t3-mode` reads `poteto-mode` by path.
 
 **Grok needed almost nothing.** Grok reads `~/.claude/skills` and Claude's installed plugins, including pstack's `poteto-agent`. On a machine without Claude, a pstack link in `~/.grok/skills` works. A link in `~/.grok/plugins` did not load.
 
@@ -141,7 +145,7 @@ These ran on real machines, not only in tests.
 
 | Machine | OS | Result |
 | --- | --- | --- |
-| Desktop | Linux | Update path and takeover of a stray Codex copy. Updated through 0.15.43 on 2026-11-18. A Gemini 4 Neon child answered through `antigravity` on 2026-11-25. |
+| Desktop | Linux | Update path and takeover of a stray Codex copy. Updated through 0.15.43 on 2026-11-18. A Gemini 4 Neon child answered through `antigravity` on 2026-11-25. The same day, an Antigravity thread ran `/t3-mode` on a read-only question. It found pstack 0.15.48, read `harness-t3.md`, `poteto-mode`, and the Investigation playbook, and named the right Antigravity tools. |
 | Laptop | Linux | Update path. All harnesses at 0.15.36 on 2026-11-14. |
 | MacBook | macOS | First install for Claude and Codex, at 0.15.36 on 2026-11-14. Passed under Homebrew bash 5.2 and under `/bin/bash` 3.2. |
 

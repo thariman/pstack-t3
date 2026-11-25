@@ -3,7 +3,7 @@ set -euo pipefail
 src=$(cd "$(dirname "$0")" && pwd)
 # The README's example output names the recorded pstack, and its Files table lists every tracked file.
 verified=$(sed -n '1s/^# pstack \([^,]*\),.*/\1/p' "$src/pstack-verified.txt")
-for h in upstream claude codex grok; do
+for h in upstream claude codex grok agy; do
   grep -qx "$h: pstack $verified" "$src/README.md" || { echo "README: example line '$h: pstack $verified' is missing"; exit 1; }
 done
 if git -C "$src" rev-parse --git-dir > /dev/null 2>&1; then
@@ -173,12 +173,32 @@ for pass in 1 2; do
   [ -f "$HOME/.codex/skills/pstack/skills/poteto-mode/worker.md" ]
   [ ! -d "$HOME/.local/share/pstack-t3/backups" ]
 done
+git -C "$tmp/upstream" checkout -q HEAD~1 -- pstack && upstream_commit fixed
+printf '#!/bin/bash\nexit 0\n' > "$tmp/bin/agy"; chmod +x "$tmp/bin/agy"
+HOME=$(mktemp -d "$tmp/home-i.XXXXXX")
+run i
+grep -q '^registered t3-mode and pstack in ' "$tmp/output"
+grep -qF "\"$tmp/repo/skills\"" "$HOME/.gemini/config/skills.json"
+grep -qF "\"$HOME/.local/share/cursor-plugins/pstack/skills\"" "$HOME/.gemini/config/skills.json"
+grep -q '^agy: pstack 0.15.37$' "$tmp/output"
+[ ! -e "$HOME/.agy" ]
+run i
+if grep -q 'skills.json' "$tmp/output"; then exit 1; fi
+printf '{ "entries": [ { "path": "~/mine" } ] }\n' > "$HOME/.gemini/config/skills.json"
+run i
+grep -q "^skip $HOME/.gemini/config/skills.json: it is not the installer's" "$tmp/output"
+[ "$(cat "$HOME/.gemini/config/skills.json")" = '{ "entries": [ { "path": "~/mine" } ] }' ]
+rm "$tmp/bin/agy"
 HOME=$(mktemp -d "$tmp/home-p.XXXXXX")
 "$src/profile.sh" check
 "$src/profile.sh" use budget > /dev/null
 [ "$(readlink "$HOME/.config/pstack-t3/active.md")" = "$src/skills/t3-mode/profiles/budget.md" ]
 "$src/profile.sh"  > "$tmp/prof"; grep -q '^\* budget ' "$tmp/prof"
 "$src/profile.sh" show > "$tmp/prof"; grep -q '^swarm workers  *codex/latest-sol low ultrafast$' "$tmp/prof"
+"$src/profile.sh" show default > "$tmp/prof"; grep -q '^swarm workers  *codex/latest-sol medium ultrafast$' "$tmp/prof"
+rm "$HOME/.config/pstack-t3/active.md"; printf 'hillclimb: codex/latest-sol low ultrafast\n' > "$HOME/.config/pstack-t3/active.md"
+"$src/profile.sh" show > "$tmp/prof"; grep -q '^hillclimb  *codex/latest-sol low ultrafast$' "$tmp/prof"
+"$src/profile.sh" use budget > /dev/null
 mkdir -p "$HOME/.config/pstack-t3/profiles"
 printf 'bug-fix: codex/latest-sol high fast\n' > "$HOME/.config/pstack-t3/profiles/mine.md"
 "$src/profile.sh" show mine > "$tmp/prof"; grep -q '^bug-fix  *codex/latest-sol high fast$' "$tmp/prof"
@@ -192,4 +212,4 @@ printf 'nope: none\nbug-fix: grok/grok-4.7 mega standard\n' > "$HOME/.config/pst
 if "$src/profile.sh" check > "$tmp/lint" 2>&1; then exit 1; fi
 grep -q 'unknown role "nope"' "$tmp/lint"
 grep -q 'unknown effort "mega"' "$tmp/lint"
-printf '\nPASS: cases a-h, no takeover by a failing pstack, pstack gate for Claude and Codex, review notice, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles, empty profile\n'
+printf '\nPASS: cases a-i, Antigravity skills.json, no takeover by a failing pstack, pstack gate for Claude and Codex, review notice, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles, empty and default profiles\n'

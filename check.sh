@@ -7,7 +7,7 @@ map="$(dirname "$0")/skills/t3-mode/harness-t3.md"
 record="$(dirname "$0")/pstack-verified.txt"
 recording=""; [ "${1:-}" != --record ] || { recording=1; shift; }
 pstack=${1:-}
-for p in $(ls -d ~/.claude/plugins/cache/cursor-plugins/pstack/*/ 2>/dev/null | sort -rV) ~/.codex/skills/pstack ~/.grok/skills/pstack ~/.agents/skills/pstack; do
+for p in $(ls -d ~/.claude/plugins/cache/cursor-plugins/pstack/*/ 2>/dev/null | sort -rV) ~/.codex/skills/pstack ~/.grok/skills/pstack ~/.agents/skills/pstack ~/.local/share/cursor-plugins/pstack; do
   [ -z "$pstack" ] && [ -f "$p/skills/poteto-mode/SKILL.md" ] && pstack=$p
 done
 [ -f "$pstack/skills/poteto-mode/SKILL.md" ] || { echo "no pstack at '$pstack'"; exit 2; }

@@ -1,6 +1,6 @@
 # pstack in T3 Code
 
-pstack skills use Cursor names. In T3 Code, under Claude, Codex, or Grok, read this file once per session, then map each Cursor name with the tables below. `<pstack>` means the folder that holds `skills/poteto-mode/SKILL.md`. Where this file is silent and the parent is Claude, use `<pstack>/docs/harness/claude-code.md` when it exists. Never pass a field or value the tool schema rejects.
+pstack skills use Cursor names. In T3 Code, under Claude, Codex, Grok, or Antigravity, read this file once per session, then map each Cursor name with the tables below. `<pstack>` means the folder that holds `skills/poteto-mode/SKILL.md`. Where this file is silent and the parent is Claude, use `<pstack>/docs/harness/claude-code.md` when it exists. Never pass a field or value the tool schema rejects.
 
 The main difference from plain Claude Code is model routing. Plain Claude Code cannot run a `grok-*` or `gpt-*` slug, so its adapter drops the slug and every "diverse panel" runs on one model. T3 Code can run them with `delegate_task`, so panels stay diverse here.
 
@@ -10,7 +10,7 @@ Pick the target model first (see Roles). Then pick the tool.
 
 | Target | Tool |
 | --- | --- |
-| Same provider as you, no settings beyond yours, no worktree | Native subagent. Claude: `Agent` with `run_in_background: false`, several in one message for a fan-out. Codex: `spawn_agent`, then wait. Grok: `spawn_subagent`, then `get_command_or_subagent_output`. Grok children run on your model. |
+| Same provider as you, no settings beyond yours, no worktree | Native subagent. Claude: `Agent` with `run_in_background: false`, several in one message for a fan-out. Codex: `spawn_agent`, then wait. Grok: `spawn_subagent`, then `get_command_or_subagent_output`. Grok children run on your model. Antigravity: `invoke_subagent` with `Model: "inherit"`. It has no wait tool, and the result arrives as a message, so end your turn or do other work until it does. |
 | Another provider, a non-default effort the native tool cannot set, a separate checkout, or work that should outlive your turn | `delegate_task`. |
 
 Before the first `delegate_task` in a thread, call `orchestrator_capabilities` once. Resolve "latest Sol" or any family name from its list. Never guess a model id. If a provider or model is missing or unauthenticated, say so and drop the seat. Do not substitute another model, and do not fall back to a CLI.
@@ -22,19 +22,19 @@ Before the first `delegate_task` in a thread, call `orchestrator_capabilities` o
 | Cursor | T3 Code |
 | --- | --- |
 | `Task` | Routing a spawn, above. |
-| `AskQuestion` | Claude: `AskUserQuestion`. Codex: `request_user_input_async` when listed, `request_user_input` in Plan mode. Grok: `ask_user_question`. Otherwise open the final message with the question. |
-| Open a todolist | `TodoWrite` in Claude, `update_plan` in Codex, `todo_write` in Grok. Otherwise keep the list in your reply. |
+| `AskQuestion` | Claude: `AskUserQuestion`. Codex: `request_user_input_async` when listed, `request_user_input` in Plan mode. Grok: `ask_user_question`. Antigravity: `ask_question`. Otherwise open the final message with the question. |
+| Open a todolist | `TodoWrite` in Claude, `update_plan` in Codex, `todo_write` in Grok, `update_steps` in Antigravity. Otherwise keep the list in your reply. |
 | Run another pstack skill | `Read` `<pstack>/skills/<name>/SKILL.md` and follow it. |
 | `/loop`, `drive` or `background` babysit waits, `scripts/watch-pr` polling | `watch_pull_request`, then end your turn. T3 wakes you on a failed check, green required checks, a comment or review, or a conflict. `watch-pr --status-only` is still fine for a one-shot verdict. Call `unwatch_pull_request` before any handoff or question. |
 | Waiting on a delegate | Follow its `next`. Never poll `task_status`, never `sleep`, never `Monitor`. Do other work and check each result as it lands. |
-| Waiting on your own background command | Claude: `t3_background_wait` with its task id. Codex: the session's own wait for that command. Grok: `get_command_or_subagent_output`. |
+| Waiting on your own background command | Claude: `t3_background_wait` with its task id. Codex: the session's own wait for that command. Grok: `get_command_or_subagent_output`. Antigravity: `run_command` notifies you when the command ends, so do other work until then. |
 
 ## Subagent fields
 
 | Cursor | T3 Code |
 | --- | --- |
 | `subagent_type: generalPurpose` | Claude native: `general-purpose`. `delegate_task`: no field, the brief carries the role. |
-| `poteto-agent` | Same provider under Claude, or under Grok when it loads the Claude plugin: `pstack:poteto-agent`. Otherwise the brief's second line is `Read <abs path>/skills/poteto-mode/SKILL.md in full before any work, including its Principles index.` |
+| `poteto-agent` | Same provider under Claude, or under Grok when it loads the Claude plugin: `pstack:poteto-agent`. Otherwise, including Antigravity, the brief's second line is `Read <abs path>/skills/poteto-mode/SKILL.md in full before any work, including its Principles index.` |
 | `comment-sicko` | Same provider under Claude: `pstack:comment-sicko`. Otherwise the brief's first line is `Read <abs path>/agents/comment-sicko.md and act as that agent.` |
 | `readonly: true` | There is no read-only switch. Narrow `runtimeMode` values pause for human approval, so never use them for this. Claude native: `Explore`. `delegate_task`: `role: "review"` or `"research"` and the brief opens `Review only. Do not edit, commit, push, comment on PRs, or start subagents.` Run `git status --short` afterward. Do not edit files a reader still reads. |
 | `readonly: false` | Default. |

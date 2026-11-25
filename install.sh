@@ -54,13 +54,25 @@ if command -v claude >/dev/null; then
   fi
 fi
 
-# Codex and Grok load pstack from a skills folder. Grok also reads ~/.claude/skills and Claude
-# plugins, so with Claude present it already has both, and linking again would load pstack twice.
-for h in codex grok; do
+# Antigravity reads skills only from folders listed in ~/.gemini/config/skills.json, one level deep.
+agy_skills() {
+  local f=~/.gemini/config/skills.json
+  if [ ! -e "$f" ]; then
+    mkdir -p "$(dirname "$f")"
+    printf '{\n  "entries": [\n    { "path": "%s" },\n    { "path": "%s" }\n  ]\n}\n' "$src/skills" "$plugins/pstack/skills" > "$f"
+    echo "registered t3-mode and pstack in $f"
+  elif ! grep -qF "\"$src/skills\"" "$f" || ! grep -qF "\"$plugins/pstack/skills\"" "$f"; then
+    echo "skip $f: it is not the installer's. Add { \"path\": \"$src/skills\" } and { \"path\": \"$plugins/pstack/skills\" } to its entries."
+  fi
+}
+
+# Codex, Grok, and Antigravity load pstack from the managed clone. Grok also reads ~/.claude/skills and
+# Claude plugins, so with Claude present it already has both, and linking again would load pstack twice.
+for h in codex grok agy; do
   command -v $h >/dev/null || continue
   found=1
   [ $h = grok ] && command -v claude >/dev/null && { echo "grok: uses Claude's t3-mode and pstack"; continue; }
-  link "$src/skills/t3-mode" ~/.$h/skills/t3-mode
+  [ $h = agy ] || link "$src/skills/t3-mode" ~/.$h/skills/t3-mode
   # Update or clone the managed copy first, so a pstack that fails the check never replaces one that works.
   if [ -n "$pulled" ]; then :
   elif [ -d "$plugins/.git" ]; then
@@ -75,6 +87,11 @@ for h in codex grok; do
   fi
   [ -n "$pulled" ] || "$src/check.sh" "$plugins/pstack" >/dev/null 2>&1 || clone_fails=1
   pulled=1
+  if [ $h = agy ]; then
+    [ -z "$clone_fails" ] || gate "$plugins/pstack" "$h" installed || true
+    agy_skills
+    continue
+  fi
   copies=("$HOME/.$h/skills/pstack")
   [ "$h" != codex ] || copies+=("$HOME/.agents/skills/pstack")
   keep=""
@@ -97,20 +114,21 @@ for h in codex grok; do
   link "$plugins/pstack" ~/.$h/skills/pstack
 done
 
-[ $found = 1 ] || { echo "no claude, codex or grok on PATH, nothing to install"; exit 1; }
+[ $found = 1 ] || { echo "no claude, codex, grok or agy on PATH, nothing to install"; exit 1; }
 version() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$@" 2>/dev/null | sed -n '1p'; }
 upstream=$(curl -fsS https://raw.githubusercontent.com/cursor/plugins/main/pstack/plugin.json 2>/dev/null) || upstream=""
 upstream=$(version <<<"$upstream")
 upstream=${upstream:-unknown}
 echo "upstream: pstack $upstream"
 claude_version=""
-for h in claude codex grok; do
+for h in claude codex grok agy; do
   command -v "$h" >/dev/null || continue
   if [ "$h" = claude ]; then
     listing=$(claude plugin list 2>/dev/null) || listing=""
     v=$(sed -n '/pstack@cursor-plugins/,/Version:/{s/.*Version:[[:space:]]*//p;}' <<<"$listing" | sed -n '1p')
     claude_version=$v
   elif [ "$h" = grok ] && command -v claude >/dev/null; then v=$claude_version
+  elif [ "$h" = agy ]; then v=$(version "$plugins/pstack/plugin.json")
   else v=$(version "$HOME/.$h/skills/pstack/plugin.json"); fi
   v=${v:-unknown}
   stale=""
