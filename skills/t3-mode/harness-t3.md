@@ -6,12 +6,12 @@ The main difference from plain Claude Code is model routing. Plain Claude Code c
 
 ## Routing a spawn
 
-Before you resolve the first seat in a thread, call `orchestrator_capabilities` once and reuse its result. Resolve the target model and options first (see Roles). Then pick the tool.
+Before you resolve the first seat in a thread, call `orchestrator_capabilities` once and reuse its result. Search it again only when omitted models could change which exact model or latest family member a seat gets. Resolve the target model and options first (see Roles). Then pick the tool.
 
 | Target | Tool |
 | --- | --- |
 | Same provider as you, a model and options your native tool can set exactly, no worktree | Native subagent. Claude: `Agent` with `run_in_background: false`, several in one message for a fan-out. Codex: `spawn_agent`, then wait. Grok: `spawn_subagent`, then `get_command_or_subagent_output`. Grok children run on your model. Antigravity: `invoke_subagent` with `Model: "inherit"`. It has no wait tool, and the result arrives as a message, so end your turn or do other work until it does. |
-| Another provider, a non-default effort the native tool cannot set, a separate checkout, or work that should outlive your turn | `delegate_task`. |
+| Another provider, a model or any option the native tool cannot set exactly, a separate checkout, or work that should outlive your turn | `delegate_task`. |
 
 Resolve "latest Sol" or any family name from its list. Never guess a model id. When a provider or model is missing, follow **Use what this machine has** under Roles. Never fall back to a CLI.
 
@@ -65,11 +65,11 @@ pstack's own defaults put code on Opus. The default profile gives code to Codex 
 
 1. Try the fallback order, skipping targets that are not runnable: `codex` / latest Sol, `claudeAgent` / `claude-opus-5-5`, `antigravity` / `gemini-4-neon`, `grok` / `grok-4.7`.
 2. A one-seat role takes the first runnable target. With none, do the work yourself and say so.
-3. A panel keeps every runnable seat and replaces each missing seat, in profile order, with the first runnable target whose provider is not on the panel yet, then one whose model is not on it yet, then any runnable target. Each replacement is its own child. Print `Seat dropped: <seat>, nothing here can run it.` only when no target runs.
+3. A panel keeps every runnable seat and replaces each missing seat, in profile order, with the first runnable target whose provider is not on the panel yet, then one whose model is not on it yet, then any runnable target. Within each step, prefer the fallback order, but take another runnable model from the catalog, such as Codex Astra or Claude Sonnet 5.5, before you reuse a model on the panel. Each replacement is its own child. Print `Seat dropped: <seat>, nothing here can run it.` only when no target runs.
 4. The cross-judge takes the first runnable pool entry whose `providerInstanceId` differs from yours, with that entry's effort and speed. With none, it takes the first runnable fallback target on another provider at `high` and standard speed. With none, arena picks its base alone and says so.
-5. A moved seat keeps its effort when the substitute lists it, or takes the highest listed effort below it. A fast speed maps to `fastMode: true` on Opus 5.5 and `serviceTier: "ultrafast"` on Codex Sol and Astra. Every other case is standard speed, set explicitly where the model offers it: `fastMode: false` for Claude, `serviceTier: "default"` for Codex.
+5. A moved seat keeps its effort when the substitute lists it, or takes the highest listed effort below it. A `fast` or `ultrafast` seat maps to the substitute's accelerated setting, `fastMode: true` on Opus 5.5 and `serviceTier: "ultrafast"` on Codex Sol and Astra. Every other case is standard speed, set explicitly where the model offers it: `fastMode: false` for Claude, `serviceTier: "default"` for Codex.
 
-Print one line per seat whose target changed, with role, old target, new target, effort, and speed, such as `Seat moved: arena runners, grok/grok-4.7 is not available here, using antigravity/gemini-4-neon high standard.` Never move a seat silently.
+Print one line per seat whose target changed, with the role (the panel's role for the one-way door seat), the profile's target as written, the new target, effort, and speed. A cross-judge that skips an unavailable pool entry counts as moved. With no judge, print `Seat dropped: arena cross-judge, no other provider can run here. Arena picks its base alone.` Example: `Seat moved: arena runners, grok/grok-4.7 is not available here, using antigravity/gemini-4-neon high standard.` Never move a seat silently.
 
 A panel seat runs at its profile effort. For any other role, the profile effort is the ceiling. Use it for the hardest work, one step below for judgment, and two or more below for routine work, per poteto-mode's Subagents section. Go above the profile only when the user asks.
 

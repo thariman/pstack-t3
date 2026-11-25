@@ -78,6 +78,7 @@ Every step is safe to rerun.
 | `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries and a local git repo standing in for upstream. Covers harness detection, takeover, rerun, a failed Claude update, updates held for Claude and Codex, a working folder kept when upstream fails the check, Grok inheritance, offline upstream, the self-update restart, the `review:` notice, profiles, and this README's version lines and file list. |
 | `upstream-job.md` | The brief the daily upstream job runs. |
 | `LICENSE` | MIT. |
+| `CREDITS.md` | Who made pstack, tstack, and T3 Code, and what this repo uses from each. |
 
 ## Model profiles
 
@@ -184,6 +185,10 @@ Not yet run on a real machine: the self-update restart, a held update, and a rea
 Two tstack skills cover jobs pstack has no playbook for. `modernize` decides whether an old PR should be rebased, reworked, or closed. `leaving-pr-comments` labels agent-written PR comments. They are candidates to add.
 
 `github.com/tstack` is Tim Stack's account, the author of lnav. It is unrelated to agent skills.
+
+## Credits
+
+`t3-mode` runs [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan ([@poteto](https://github.com/poteto)), and borrows rules from [tstack](https://github.com/t3dotgg/tstack) by Theo Browne. See [`CREDITS.md`](CREDITS.md).
 
 ## License
 
