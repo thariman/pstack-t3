@@ -49,6 +49,9 @@ if [ -n "$recording" ]; then
   { echo "# pstack ${version:-unknown}, read and verified by hand"; sums; } > "$record"
   echo "recorded pstack ${version:-unknown} as verified in $record"
 elif [ -f "$record" ]; then
+  recorded=$(sed -n '1s/^# pstack \([^,]*\),.*/\1/p' "$record")
+  # A pstack older than the record, such as a machine that has not updated yet, has nothing new to read.
+  [ "$version" = "$recorded" ] || [ "$(printf '%s\n%s\n' "$recorded" "$version" | sort -V | tail -n 1)" != "$recorded" ] || exit 0
   changed=$(comm -13 <(sed 1d "$record" | sort) <(sums | sort) | awk '{print $3}' | tr '\n' ' ')
   [ -z "$changed" ] || echo "review: since $(sed -n '1s/^# //;1s/,.*//p' "$record"), pstack changed ${changed% }. Read the diff, update t3-mode if needed, then run ./check.sh --record."
 fi

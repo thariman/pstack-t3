@@ -26,7 +26,7 @@ Goal: keep `t3-mode` matched to the newest pstack, so every machine can take pst
    - A closed one: the user turned it down. Reply with its URL and stop.
    - None: the earlier run stopped part way. Find its worktree with `git -C <repo> worktree list`, or add one for the existing branch with `git -C <repo> worktree add -q <path> pstack-<version>`, and continue from step 4 there.
 
-4. Find what changed. The first line of `<repo>/pstack-verified.txt` names the version last read by hand. Find that version's commit with `git -C <upstream> log --format=%h -S'"version": "<old>"' -- pstack/plugin.json | tail -1`. Read `git -C <upstream> diff <old commit> origin/main -- pstack` for every file the check or the `review:` line names, and read the rest of the diff's stat.
+4. Find what changed. The first line of `<repo>/pstack-verified.txt` names the version last read by hand. Find that version's commit with `git -C <upstream> log origin/main --format=%h -S'"version": "<old>"' -- pstack/plugin.json | tail -1`. Read `git -C <upstream> diff <old commit> origin/main -- pstack` for every file the check or the `review:` line names, and read the rest of the diff's stat.
 
 5. In the worktree, update `t3-mode` only where pstack changed something it maps.
    - `skills/t3-mode/harness-t3.md` for Cursor names, files, and rules about briefs, subagents, or models.
@@ -40,9 +40,9 @@ Goal: keep `t3-mode` matched to the newest pstack, so every machine can take pst
    ./check.sh "$new/pstack" && ./check.sh --record "$new/pstack" && ./profile.sh check && ./test-install.sh
    ```
 
-   Commit with a message that names the pstack version, push the branch, and open a pull request with `gh pr create`. Its body opens with `## Why`, then lists each pstack change and the `t3-mode` change it caused, and each pstack change you judged needs nothing, with the reason.
+   Commit with a message that names the pstack version, push with `git push -u origin pstack-<version>`, and open a pull request with `gh pr create`. Its body opens with `## Why`, then lists each pstack change and the `t3-mode` change it caused, and each pstack change you judged needs nothing, with the reason.
 
-7. Get a second opinion. Start one `delegate_task` with `role: "review"`, Codex latest Sol, `reasoningEffort: high`, `serviceTier: "ultrafast"`. Its brief opens `Review only. Do not edit, commit, push, comment on PRs, or start subagents.` and gives the pull request URL, the worktree path, the upstream diff range, and this goal. Fix each finding you agree with, push, and list the ones you reject with the reason in the pull request.
+7. Get a second opinion. Start one `delegate_task` with `role: "review"`, Codex latest Sol, `reasoningEffort: high`, `serviceTier: "ultrafast"`. Its brief opens `Review only. Do not edit, commit, push, comment on PRs, or start subagents.` and gives the pull request URL, the worktree path, the upstream diff range, and this goal. Fix each finding you agree with, rerun step 6's checks, and push. Add a `## Review` section to the pull request body that lists each finding with what you fixed, and each one you reject with the reason. Edit the body with `gh api -X PATCH repos/thariman/pstack-t3/pulls/<number> -F body=@<file>`, because `gh pr edit` fails on the Projects (classic) deprecation.
 
 8. Send the result to Telegram. Feed it on stdin, never as an argument.
 
