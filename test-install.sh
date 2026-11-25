@@ -3,16 +3,25 @@ set -euo pipefail
 src=$(cd "$(dirname "$0")" && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-mkdir -p "$tmp/bin" "$tmp/repo/skills/t3-mode" "$tmp/fixture/skills/poteto-mode" "$tmp/fixture/agents"
+mkdir -p "$tmp/bin" "$tmp/repo/skills/t3-mode" "$tmp/fixture/skills/poteto-mode" "$tmp/fixture/skills/setup-pstack" "$tmp/fixture/agents" "$tmp/fixture/docs/harness"
 cp "$src/install.sh" "$src/check.sh" "$src/profile.sh" "$tmp/repo/"
 cp -R "$src/skills/t3-mode/profiles" "$tmp/repo/skills/t3-mode/"
-cp "$src/skills/t3-mode/harness-t3.md" "$tmp/repo/skills/t3-mode/"
+cp "$src/skills/t3-mode/harness-t3.md" "$src/skills/t3-mode/SKILL.md" "$tmp/repo/skills/t3-mode/"
 if [ $# -gt 0 ]; then
   cp -R "$1/." "$tmp/fixture/"
 else
   printf '{"version":"0.15.36"}\n' > "$tmp/fixture/plugin.json"
   printf 'Use `subagent_type: generalPurpose`.\n' > "$tmp/fixture/skills/poteto-mode/SKILL.md"
+  printf 'worker rules\n' > "$tmp/fixture/skills/poteto-mode/worker.md"
+  for f in agents/poteto-agent.md agents/comment-sicko.md docs/harness/claude-code.md; do printf 'x\n' > "$tmp/fixture/$f"; done
+  { echo '```'; echo '# defaults: 3'; sed -n 's/^\([a-z][^:#]*\): .*/\1: x/p' "$src/skills/t3-mode/profiles/default.md" | grep -v '^one-way door seat'; echo '```'; } \
+    > "$tmp/fixture/skills/setup-pstack/SKILL.md"
 fi
+# A local upstream repo stands in for github.com/cursor/plugins.
+mkdir -p "$tmp/upstream"; cp -R "$tmp/fixture" "$tmp/upstream/pstack"
+up() { /usr/bin/git -C "$tmp/upstream" -c user.name=t -c user.email=t@t "$@"; }
+up init -q; up add -A; up commit -qm v1
+upstream_commit() { up add -A; up commit -qm "$1"; }
 export TEST_ROOT="$tmp"
 export PATH="$tmp/bin:/usr/bin:/bin"
 cat > "$tmp/bin/git" <<'STUB'
@@ -21,8 +30,7 @@ set -eu
 printf '%s\n' "$*" >> "$TEST_ROOT/git.log"
 if [ "$1" = clone ]; then
   for dest in "$@"; do :; done
-  mkdir -p "$dest/.git"
-  cp -R "$TEST_ROOT/fixture" "$dest/pstack"
+  exec /usr/bin/git clone -q --depth 1 "file://$TEST_ROOT/upstream" "$dest"
 elif [ "$1 $2 $3" = "-C $TEST_ROOT/repo rev-parse" ]; then
   cat "$TEST_ROOT/head" 2>/dev/null || echo old
 elif [ "$1 $2 $3" = "-C $TEST_ROOT/repo pull" ] && [ -n "${SELF_UPDATE:-}" ] && [ ! -e "$TEST_ROOT/head" ]; then
@@ -30,7 +38,7 @@ elif [ "$1 $2 $3" = "-C $TEST_ROOT/repo pull" ] && [ -n "${SELF_UPDATE:-}" ] && 
   sed -i.bak '4a\
 echo new-installer-code-ran' "$TEST_ROOT/repo/install.sh"
 elif [ "$1" = -C ] && [ "$2" != "$TEST_ROOT/repo" ]; then
-  cp "$TEST_ROOT/fixture/plugin.json" "$2/pstack/plugin.json"
+  exec /usr/bin/git "$@"
 fi
 STUB
 cat > "$tmp/bin/curl" <<'STUB'
@@ -63,10 +71,14 @@ backup=$(find "$HOME/.local/share/pstack-t3/backups" -name 'codex-codex-pstack-*
 diff -r "$tmp/fixture" "$backup"
 [ "$(find "$HOME/.codex/skills" -type d -name pstack | wc -l | tr -d ' ')" = 0 ]
 grep -q '^codex: pstack 0.15.36 STALE$' "$tmp/output"
-printf '{"version":"0.15.35"}\n' > "$HOME/.local/share/cursor-plugins/pstack/plugin.json"
+"$tmp/repo/check.sh" --record "$HOME/.local/share/cursor-plugins/pstack" > /dev/null
+printf '{"version":"0.15.37"}\n' > "$tmp/upstream/pstack/plugin.json"
+printf 'worker rules, new wording\n' > "$tmp/upstream/pstack/skills/poteto-mode/worker.md"
+upstream_commit v2
 run b
 [ "$(backup_count)" = 1 ]
-grep -q '^codex: pstack 0.15.36 STALE$' "$tmp/output"
+grep -q '^codex: pstack 0.15.37$' "$tmp/output"
+grep -q '^review: since pstack 0.15.36, pstack changed skills/poteto-mode/worker.md\.' "$tmp/output"
 grep -q -- '-C .*cursor-plugins pull -q --ff-only' "$tmp/git.log"
 cat > "$tmp/bin/claude" <<'STUB'
 #!/bin/bash
@@ -76,6 +88,7 @@ case "$*" in
     for ((i=0; i<12000; i++)); do printf 'another plugin with a version\n'; done ;;
   'plugin marketplace update cursor-plugins') echo 'marketplace updated' ;;
   'plugin update pstack@cursor-plugins')
+    echo update >> "$TEST_ROOT/claude.log"
     printf 'update started\nnetwork unavailable\n' >&2
     exit 1 ;;
   *) exit 1 ;;
@@ -86,11 +99,19 @@ chmod +x "$tmp/bin/claude" "$tmp/bin/grok"
 HOME=$(mktemp -d "$tmp/home-c.XXXXXX")
 mkdir -p "$HOME/.claude/plugins/cache/cursor-plugins/pstack"
 cp -R "$tmp/fixture" "$HOME/.claude/plugins/cache/cursor-plugins/pstack/0.15.35"
+mkdir -p "$HOME/.claude/plugins/marketplaces/cursor-plugins"
+cp -R "$tmp/fixture" "$HOME/.claude/plugins/marketplaces/cursor-plugins/pstack"
 run c
 grep -q '^pstack update failed (claude): network unavailable$' "$tmp/output"
 grep -q '^claude: pstack 0.15.35 STALE$' "$tmp/output"
 grep -q '^grok: pstack 0.15.35 STALE$' "$tmp/output"
 [ ! -e "$HOME/.grok/skills/pstack" ]
+[ "$(grep -c update "$tmp/claude.log")" = 1 ]
+rm "$HOME/.claude/plugins/marketplaces/cursor-plugins/pstack/skills/poteto-mode/worker.md"
+run g
+grep -q '^pstack update held (claude): ' "$tmp/output"
+grep -q '^  missing in pstack: skills/poteto-mode/worker.md$' "$tmp/output"
+[ "$(grep -c update "$tmp/claude.log")" = 1 ]
 rm "$tmp/bin/claude"
 HOME=$(mktemp -d "$tmp/home-d.XXXXXX")
 for h in codex agents grok; do
@@ -108,7 +129,7 @@ for h in codex grok; do
   [ "$(find "$HOME/.$h/skills" -type d -name pstack | wc -l | tr -d ' ')" = 0 ]
 done
 [ "$(cat "$HOME/.codex/skills/t3-mode/keep")" = keep ]
-grep -q '^grok: pstack 0.15.36 STALE$' "$tmp/output"
+grep -q '^grok: pstack 0.15.37$' "$tmp/output"
 export CURL_FAIL=1
 bash "$tmp/repo/install.sh" > "$tmp/offline" 2>&1
 grep -q '^upstream: pstack unknown$' "$tmp/offline"
@@ -118,6 +139,15 @@ HOME=$(mktemp -d "$tmp/home-e.XXXXXX")
 SELF_UPDATE=1 run e
 [ "$(grep -c '^new-installer-code-ran$' "$tmp/output")" = 1 ]
 [ "$(grep -c '^updated pstack-t3 to new, restarting the installer$' "$tmp/output")" = 1 ]
+codex_home=$HOME
+rm "$tmp/upstream/pstack/skills/poteto-mode/worker.md"
+printf '{"version":"0.15.38"}\n' > "$tmp/upstream/pstack/plugin.json"
+upstream_commit broken
+run f
+grep -q '^pstack update held (codex): ' "$tmp/output"
+grep -q '^  missing in pstack: skills/poteto-mode/worker.md$' "$tmp/output"
+grep -q '^codex: pstack 0.15.37$' "$tmp/output"
+[ -f "$HOME/.codex/skills/pstack/skills/poteto-mode/worker.md" ]
 HOME=$(mktemp -d "$tmp/home-p.XXXXXX")
 "$src/profile.sh" check
 "$src/profile.sh" use budget > /dev/null
@@ -134,4 +164,4 @@ printf 'nope: none\nbug-fix: grok/grok-4.7 mega standard\n' > "$HOME/.config/pst
 if "$src/profile.sh" check > "$tmp/lint" 2>&1; then exit 1; fi
 grep -q 'unknown role "nope"' "$tmp/lint"
 grep -q 'unknown effort "mega"' "$tmp/lint"
-printf '\nPASS: cases a-e, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles\n'
+printf '\nPASS: cases a-g, pstack gate for Claude and Codex, review notice, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles\n'

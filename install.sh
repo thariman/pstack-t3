@@ -20,22 +20,36 @@ link() {
   else echo "skip $2: a real folder is there, remove it to link"; fi
 }
 
+# Checks a new pstack against t3-mode. On failure the harness keeps the pstack it has.
+gate() {
+  local out
+  if out=$("$src/check.sh" "$1" 2>&1); then return 0; fi
+  if [ "${3:-}" = installed ]; then echo "warning ($2): t3-mode does not match this pstack yet:"
+  else echo "pstack update held ($2): the new pstack does not match t3-mode, so $2 keeps its current pstack:"; fi
+  printf '%s\n' "$out" | sed 's/^/  /'
+  return 1
+}
+
 found=0
+pulled=""
 if command -v claude >/dev/null; then
   found=1
   link "$src/skills/t3-mode" ~/.claude/skills/t3-mode
   if [[ $(claude plugin list 2>/dev/null) == *pstack@cursor-plugins* ]]; then
     err=$(mktemp)
-    if { claude plugin marketplace update cursor-plugins && claude plugin update pstack@cursor-plugins; } 2>"$err"; then
-      cat "$err" >&2
-    else
+    # The marketplace update downloads the new pstack. Check it before the plugin update installs it.
+    if ! claude plugin marketplace update cursor-plugins 2>"$err"; then
       cat "$err" >&2
       echo "pstack update failed (claude): $(tail -n 1 "$err")"
+    elif gate ~/.claude/plugins/marketplaces/cursor-plugins/pstack claude; then
+      if claude plugin update pstack@cursor-plugins 2>"$err"; then cat "$err" >&2
+      else cat "$err" >&2; echo "pstack update failed (claude): $(tail -n 1 "$err")"; fi
     fi
     rm -f "$err"
   else
     claude plugin marketplace add cursor/plugins
     claude plugin install pstack@cursor-plugins
+    gate ~/.claude/plugins/marketplaces/cursor-plugins/pstack claude installed || true
   fi
 fi
 
@@ -58,12 +72,19 @@ for h in codex grok; do
       echo "moved $p -> $dest"
     fi
   done
-  if [ -d "$plugins/.git" ]; then
+  if [ -n "$pulled" ]; then :
+  elif [ -d "$plugins/.git" ]; then
+    old=$(git -C "$plugins" rev-parse HEAD)
     git -C "$plugins" pull -q --ff-only
+    if [ "$(git -C "$plugins" rev-parse HEAD)" != "$old" ] && ! gate "$plugins/pstack" "$h"; then
+      git -C "$plugins" reset -q --hard "$old"
+    fi
   else
     mkdir -p "$(dirname "$plugins")"
     git clone -q --depth 1 https://github.com/cursor/plugins "$plugins"
+    gate "$plugins/pstack" "$h" installed || true
   fi
+  pulled=1
   link "$plugins/pstack" ~/.$h/skills/pstack
 done
 

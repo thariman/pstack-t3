@@ -21,10 +21,14 @@ upstream: pstack 0.15.43
 claude: pstack 0.15.43
 codex: pstack 0.15.43
 grok: pstack 0.15.43
-ok: every Cursor name pstack uses is mapped (...)
+ok: every Cursor name, file, and role t3-mode uses matches pstack (...)
 ```
 
-If a line ends in `STALE`, that harness is behind upstream. Rerun the installer. If you see `pstack update failed (claude): <reason>`, Claude's plugin update failed and the rest of the install still ran. If you see `skip <path>: a real folder is there`, the installer refused to overwrite a folder it did not create. Remove the folder and rerun.
+If a line ends in `STALE`, that harness is behind upstream. Rerun the installer.
+
+The installer checks every new pstack before it installs it. If the check fails, you see `pstack update held (<harness>): ...` with the reasons, and that harness keeps the pstack it has. Nothing breaks. The daily job below opens a pull request that fixes `t3-mode`, and the update goes through on the first install after you merge it.
+
+If you see `review: since pstack <version>, pstack changed <files>`, the new pstack passed the check but changed files `t3-mode` follows closely. It is installed. Someone should read those changes, and the daily job does that for you. If you see `pstack update failed (claude): <reason>`, Claude's plugin update failed and the rest of the install still ran. If you see `skip <path>: a real folder is there`, the installer refused to overwrite a folder it did not create. Remove the folder and rerun.
 
 Restart open Claude sessions after an update. `claude plugin update` applies on the next start.
 
@@ -63,7 +67,8 @@ Every step is safe to rerun.
 | `install.sh` | Installs and updates everything on one machine. |
 | `skills/t3-mode/profiles/` | Built-in model profiles. |
 | `profile.sh` | Lists, shows, switches, and checks profiles. |
-| `check.sh` | Fails when pstack uses a Cursor subagent field that `harness-t3.md` does not map. Takes an optional pstack path. |
+| `check.sh` | Fails when pstack uses a Cursor subagent field that `harness-t3.md` does not map, drops a file `t3-mode` reads, or adds or removes a model role. Takes an optional pstack path. `--record` marks a pstack as read and verified. |
+| `pstack-verified.txt` | The last pstack read and verified by hand, with checksums of the files `t3-mode` follows closely. |
 | `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries. Covers takeover, rerun, a failed Claude update, Grok inheritance, offline upstream, the self-update restart, and profiles. |
 
 ## Model profiles
@@ -138,8 +143,9 @@ The self-update restart worked against real git in a throwaway repo. It has not 
 
 ## Known limits
 
+- **The check reads names and files, not meaning.** A pstack change in wording that changes behavior passes the check. The `review:` notice and the daily job's pull request are how a person or a review model reads it.
 - **The rules run on the honor system.** `t3-mode` is instructions. Nothing checks that an agent restated the goal, listed the playbook steps, or used a second model for review. The planned fix is a transcript grader, then a Claude `Stop` hook for any model that misses often. It is not built.
-- **Updates do not happen on launch.** Claude's auto-update for the `cursor-plugins` marketplace is off by default. Turn it on in `/plugin`, on the Marketplaces tab. Grok then follows Claude. Codex never updates on launch. Only `install.sh` updates it. A daily timer is planned and not built.
+- **Updates do not happen on launch.** Claude's auto-update for the `cursor-plugins` marketplace is off by default. Turn it on in `/plugin`, on the Marketplaces tab. Grok then follows Claude. Codex never updates on launch. Only `install.sh` updates it. The daily job checks upstream, but it changes `t3-mode`, not your installed pstack.
 - **Claude installs pstack over SSH on some machines.** On the MacBook, `claude plugin marketplace add` cloned `git@github.com:cursor/plugins.git`. A machine without a GitHub SSH key can fail at that step.
 - **`check.sh` runs under the first `bash` on `PATH`**, not under the `bash` that runs `install.sh`.
 
@@ -173,3 +179,16 @@ Run both checks before you push.
 ```
 
 `check.sh` with no argument checks the newest installed pstack. Pass a path to check another copy, such as `./check.sh ~/.codex/skills/pstack`.
+
+After you read a new pstack's changes and update `t3-mode` to match, run `./check.sh --record <pstack path>` and commit `pstack-verified.txt`.
+
+## Daily upstream job
+
+A T3 scheduled task on one machine runs [`upstream-job.md`](upstream-job.md) every morning. When upstream pstack fails the check or changes a file `t3-mode` follows closely, it starts a `t3-mode` agent that:
+
+1. updates `t3-mode` on a branch in a separate worktree, so the live skill on that machine never changes mid-run
+2. runs both checks, records the new pstack, and opens a pull request
+3. asks a Codex Sol reviewer for a second opinion and fixes what it finds
+4. sends the pull request link to Telegram
+
+It never merges. Every machine keeps its current pstack until you merge and rerun the installer.
