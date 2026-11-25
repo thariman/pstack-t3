@@ -61,24 +61,42 @@ Every step is safe to rerun.
 | `skills/t3-mode/harness-t3.md` | Maps each Cursor name in pstack to its T3 equivalent for Claude, Codex, and Grok. Holds the model role defaults. |
 | `skills/t3-mode/agents/openai.yaml` | Display name and default prompt for Codex. |
 | `install.sh` | Installs and updates everything on one machine. |
+| `skills/t3-mode/profiles/` | Built-in model profiles. |
+| `profile.sh` | Lists, shows, switches, and checks profiles. |
 | `check.sh` | Fails when pstack uses a Cursor subagent field that `harness-t3.md` does not map. Takes an optional pstack path. |
-| `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries. Covers takeover, rerun, a failed Claude update, Grok inheritance, offline upstream, and the self-update restart. |
+| `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries. Covers takeover, rerun, a failed Claude update, Grok inheritance, offline upstream, the self-update restart, and profiles. |
 
-## Model roles
+## Model profiles
 
-`harness-t3.md` assigns these defaults. pstack's own defaults put code on Opus 5.5 and use Gemini 4 Carbon as a panel seat. T3 has no Gemini, so Codex takes both jobs here.
+A profile sets the model, effort, and speed for every pstack role. `t3-mode` reads the default profile, then the active one on top of it.
 
-| Role | Default |
+| Profile | For |
 | --- | --- |
-| Feature, refactoring, bug fix, and perf work | Codex latest Sol, `reasoningEffort: high` |
-| Judgment and prose | Claude `claude-opus-5-5`, effort `xhigh` |
-| Swarm workers and verification | Codex latest Sol, `reasoningEffort: medium` |
-| Arena and interrogate panels | Fable 5.2, Opus 5.5, and latest Sol at `high`, with Grok 4.7 as a fourth seat for decisions that are hard to reverse |
-| Cross-judge | Opus 5.5, then latest Sol, from a provider other than the main agent's |
+| `default` | Code on Codex Sol, judgment on Opus 5.5, panels of Fable 5.2, Opus 5.5, Gemini 4 Neon, and Sol, and Grok 4.7 added for decisions that are hard to reverse. |
+| `budget` | Lower effort, two-seat panels of Opus and Sol, no Fable or Grok. |
+| `deep` | `xhigh` everywhere, Fable 5.2 for judgment, and Gemini and Grok on every panel. |
+| `claude-only` | Every child on Claude. Arena has no cross-vendor judge. |
 
-Codex Sol and Astra children run with `serviceTier: "ultrafast"`, and Opus 5.5 children with `fastMode: true`. No child runs above `xhigh`. Fable 5.2 runs outside a panel only when you name it, or after two Opus runs of the same brief fail.
+```bash
+~/.local/share/pstack-t3/profile.sh               # list profiles, * marks the active one
+~/.local/share/pstack-t3/profile.sh show          # every role with its model, effort, and speed
+~/.local/share/pstack-t3/profile.sh show deep     # the same for another profile
+~/.local/share/pstack-t3/profile.sh use budget    # switch this machine
+```
 
-To override a role, add a line such as `swarm workers: codex/gpt-6.1-sol medium` to `~/.claude/rules/pstack-models.md`. Claude loads that folder on its own. Codex and Grok agents read the file when `harness-t3.md` tells them to.
+The active profile is a link at `~/.config/pstack-t3/active.md`, one per machine. To use a profile for one task only, write it in the prompt, as in `/t3-mode profile=deep <task>`.
+
+To make your own, copy a profile into `~/.config/pstack-t3/profiles/` and edit it. A role you leave out keeps the default's line. `use` refuses a profile with a mistake in it, and `profile.sh check` lists the mistakes.
+
+```text
+# <role>: <provider>/<model> <effort> <speed>, commas between panel seats, `none` to drop
+bug-fix: codex/latest-sol xhigh ultrafast
+arena runners: claudeAgent/claude-opus-5-5 high fast, codex/latest-sol high ultrafast
+```
+
+Providers are `claudeAgent`, `codex`, `grok`, and `antigravity` for Gemini. A model is any id `orchestrator_capabilities` lists, or `latest-sol`. Effort is `low` through `max`. Speed is `standard`, `fast` (Claude only), or `ultrafast` (Codex Sol and Astra only).
+
+`t3-mode` ignores pstack's own `/setup-pstack` file, `~/.claude/rules/pstack-models.md`. Change models with a profile instead.
 
 ## Why it is built this way
 

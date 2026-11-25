@@ -88,3 +88,4 @@ for h in claude codex grok; do
   echo "$h: pstack $v$stale"
 done
 "$src/check.sh"
+"$src/profile.sh" check

@@ -4,7 +4,8 @@ src=$(cd "$(dirname "$0")" && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/bin" "$tmp/repo/skills/t3-mode" "$tmp/fixture/skills/poteto-mode" "$tmp/fixture/agents"
-cp "$src/install.sh" "$src/check.sh" "$tmp/repo/"
+cp "$src/install.sh" "$src/check.sh" "$src/profile.sh" "$tmp/repo/"
+cp -R "$src/skills/t3-mode/profiles" "$tmp/repo/skills/t3-mode/"
 cp "$src/skills/t3-mode/harness-t3.md" "$tmp/repo/skills/t3-mode/"
 if [ $# -gt 0 ]; then
   cp -R "$1/." "$tmp/fixture/"
@@ -117,4 +118,20 @@ HOME=$(mktemp -d "$tmp/home-e.XXXXXX")
 SELF_UPDATE=1 run e
 [ "$(grep -c '^new-installer-code-ran$' "$tmp/output")" = 1 ]
 [ "$(grep -c '^updated pstack-t3 to new, restarting the installer$' "$tmp/output")" = 1 ]
-printf '\nPASS: cases a-e, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart\n'
+HOME=$(mktemp -d "$tmp/home-p.XXXXXX")
+"$src/profile.sh" check
+"$src/profile.sh" use budget > /dev/null
+[ "$(readlink "$HOME/.config/pstack-t3/active.md")" = "$src/skills/t3-mode/profiles/budget.md" ]
+"$src/profile.sh"  > "$tmp/prof"; grep -q '^\* budget ' "$tmp/prof"
+"$src/profile.sh" show > "$tmp/prof"; grep -q '^swarm workers  *codex/latest-sol low ultrafast$' "$tmp/prof"
+mkdir -p "$HOME/.config/pstack-t3/profiles"
+printf 'bug-fix: codex/latest-sol high fast\n' > "$HOME/.config/pstack-t3/profiles/mine.md"
+"$src/profile.sh" show mine > "$tmp/prof"; grep -q '^bug-fix  *codex/latest-sol high fast$' "$tmp/prof"
+"$src/profile.sh" show mine > "$tmp/prof"; grep -q '^hillclimb  *codex/latest-sol high ultrafast$' "$tmp/prof"
+if "$src/profile.sh" use mine > "$tmp/lint" 2>&1; then exit 1; fi
+grep -q 'fast is Claude only' "$tmp/lint"
+printf 'nope: none\nbug-fix: grok/grok-4.7 mega standard\n' > "$HOME/.config/pstack-t3/profiles/mine.md"
+if "$src/profile.sh" check > "$tmp/lint" 2>&1; then exit 1; fi
+grep -q 'unknown role "nope"' "$tmp/lint"
+grep -q 'unknown effort "mega"' "$tmp/lint"
+printf '\nPASS: cases a-e, backup contents, clone/pull, Grok inheritance, t3-mode preservation, unknown upstream, self-update restart, profiles\n'

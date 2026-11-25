@@ -49,21 +49,19 @@ Every brief, native or `delegate_task`, opens with `Read <abs path>/skills/potet
 
 ## Roles
 
-Defaults below. Overrides live in `~/.claude/rules/pstack-models.md`, one `<role>: <provider>/<model> <effort>` line per role, such as `swarm workers: codex/gpt-6.1-sol medium`. Claude Code loads that folder on its own. Under Codex, read the file. A list value means one seat per entry. `inherit-parent` or `auto` means your own model, on the native tool.
+Each child's model, effort, and speed come from a profile. Read `profiles/default.md` next to this file, then `~/.config/pstack-t3/active.md` if it exists. A role line in the active profile replaces the default's line, and a role it leaves out keeps the default. When the user names a profile in the task, such as `/t3-mode profile=budget`, read `~/.config/pstack-t3/profiles/<name>.md` or `profiles/<name>.md` instead of the active one, for this task only. In `t3-mode`, the profile replaces `~/.claude/rules/pstack-models.md`. Ignore that file's lines.
 
-| pstack role | Default target in T3 |
-| --- | --- |
-| feature, refactoring, bug-fix, perf-issue, hillclimb | `codex` / latest Sol, `reasoningEffort: high`, `serviceTier: "ultrafast"` |
-| judgment and prose | `claudeAgent` / `claude-opus-5-5`, effort `xhigh`, `fastMode: true` |
-| swarm workers, verification | `codex` / latest Sol, `reasoningEffort: medium`, `serviceTier: "ultrafast"` |
-| arena runners, interrogate reviewers | `claude-fable-5-2 high`, `claude-opus-5-5 high` with `fastMode: true`, and latest Sol `high` on ultrafast. Add `grok` / `grok-4.7 high` as a fourth seat for one-way doors. |
-| arena cross-judge pool | `claude-opus-5-5 high` with `fastMode: true`, then latest Sol `high`. The judge's provider must differ from yours. Fable and Opus are both Claude. |
+A line is `<role>: <provider>/<model> <effort> <speed>`. Commas separate panel seats, one child per seat. `none` drops the role or seat, and a dropped cross-judge means arena picks its base alone and says so.
 
-pstack's defaults put code on Opus and use Gemini as a panel seat. T3 has no Gemini, so Codex takes code and the Gemini seat here. Every Codex Sol or Astra child gets `serviceTier: "ultrafast"`, and every Opus 5.5 child gets `fastMode: true`.
+- `provider` is the `providerInstanceId`. `latest-sol` means the newest Sol id that `orchestrator_capabilities` lists.
+- `effort` goes in `options` as `effort` for `claudeAgent`, `reasoningEffort` for `codex` and `grok`, and `thought_level` for `antigravity`.
+- `speed` `fast` is `fastMode: true`, `ultrafast` is `serviceTier: "ultrafast"`, and `standard` sets neither.
+- `one-way door seat` joins every arena and interrogate panel on a decision that is hard to reverse.
+- Trivial mechanical edits and verification use `swarm workers`.
 
-Fable 5.2 runs outside a panel only when the user named it for this task, or when two Opus 5.5 `xhigh` runs of the same brief failed its check. Say which. Difficulty alone never qualifies.
+pstack's own defaults put code on Opus. The default profile gives code to Codex Sol and adds Sol as a fourth panel seat next to pstack's Fable, Opus, and Gemini. Fable 5.2 runs outside a panel only when the user named it for this task, the profile puts it on that role, or two Opus 5.5 `xhigh` runs of the same brief failed its check. Say which. Difficulty alone never qualifies.
 
-Raise a role one step for the hardest work, lower it one step for judgment and two or more for routine work, per poteto-mode's Subagents section. Panel seats keep their listed level. No child runs above `xhigh`.
+Raise a role one step for the hardest work, lower it one step for judgment and two or more for routine work, per poteto-mode's Subagents section. Panel seats keep their listed level. Never go above the profile's effort unless the user asks.
 
 ## Cursor-only features
 
@@ -75,6 +73,6 @@ When a step needs one of these, write one line, `Skipped in T3 Code: <step>. <re
 | Bugbot | Its PR comments are ordinary review threads. Skip steps that start or configure it. |
 | Cursor cloud agents | Use `isolation: "worktree"`. Skip steps that need the cloud dashboard. |
 | Origin | Use `gh`. |
-| `~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`, see Roles. |
+| `~/.cursor/rules/pstack-models.mdc`, `/setup-pstack` | The active profile, see Roles. Change it with `profile.sh` in the pstack-t3 repo. |
 | `~/.cursor/plugins/` | `~/.claude/plugins/` under Claude, `~/.codex/skills/` under Codex. |
 | A PR you open or push | Link it with `link_pull_request` as your next call. |
