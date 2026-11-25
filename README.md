@@ -160,7 +160,7 @@ These ran on real machines, not only in tests.
 
 The daily job's brief ran once for real on 2026-11-25 against 0.15.48. It opened [pull request #1](https://github.com/thariman/pstack-t3/pull/1), got a Codex Sol review, and sent the Telegram message. Its three wording mistakes are fixed.
 
-Not yet run on a real machine: a held update and a real Claude update failure. Tests cover each. That restart used to switch to the first `bash` on `PATH`, so the rest of the 3.2 run used Homebrew bash 5.2. It now keeps the `bash` that started it. A full run of the installer under 3.2 is still unproven.
+Not yet run on a real machine: a held update and a real Claude update failure. Tests cover each. That restart used to switch to the first `bash` on `PATH`, so the rest of the 3.2 run used Homebrew bash 5.2. It now keeps the `bash` that started it, and a full installer run under `/bin/bash` 3.2 passed on the MacBook on 2026-11-25. `check.sh` and `profile.sh` still run under the first `bash` on `PATH`.
 
 ## Known limits
 
