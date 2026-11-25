@@ -31,7 +31,7 @@ Goal: keep `t3-mode` matched to the newest pstack, so every machine can take pst
 5. In the worktree, update `t3-mode` only where pstack changed something it maps.
    - `skills/t3-mode/harness-t3.md` for Cursor names, files, and rules about briefs, subagents, or models.
    - `skills/t3-mode/profiles/*.md` for added, removed, or renamed roles. Keep the user's choices: code on Codex latest Sol with `ultrafast`, Sol as a panel seat, Grok as the one-way door seat. When pstack changes a default model, apply it only to the seats that already follow pstack's default for that role.
-   - `README.md` where it describes what you changed.
+   - `README.md`, in the same commit as each change. Update the example version lines and the Sources line ("checked against <version>, commit <sha>") to the new pstack, every section that describes what you changed, the Files table for any file you add or remove, and "What is proven" when this run proved something new. `test-install.sh` fails when the version lines or the Files table drift.
    - Write prose per pstack's `unslop` skill. Make no change pstack did not cause.
 
 6. Check, record, and test in the worktree.
