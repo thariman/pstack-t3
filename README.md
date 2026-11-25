@@ -1,8 +1,8 @@
 # pstack-t3
 
-`pstack-t3` runs [pstack](https://github.com/cursor/plugins/tree/main/pstack)'s `poteto-mode` inside [T3 Code](https://github.com/pingdotgg/t3code), with Claude, Codex, and Grok as the main agent. Its multi-model reviews run on real Claude, Codex, and Grok models through T3's `delegate_task`, instead of collapsing onto one model.
+`pstack-t3` runs [pstack](https://github.com/cursor/plugins/tree/main/pstack)'s `poteto-mode` inside [T3 Code](https://github.com/pingdotgg/t3code), with Claude, Codex, or Grok as the main agent. Its multi-model reviews run on real Claude, Codex, Gemini, and Grok models through T3's `delegate_task`, instead of collapsing onto one model.
 
-It does not copy pstack. It adds one skill, `t3-mode`, that loads pstack and a translation table for T3. pstack updates reach you without a re-port.
+It does not copy pstack. It adds one skill, `t3-mode`, that loads pstack, a translation table for T3, and a model profile. pstack updates reach you without a re-port, and the installer holds back any update that does not match `t3-mode` yet.
 
 ## Install or update on any machine
 
@@ -44,14 +44,14 @@ Typing `/pstack:poteto-mode` alone skips the translation table. The agent then g
 
 | Harness | pstack missing | pstack present |
 | --- | --- | --- |
-| Claude | Adds the `cursor-plugins` marketplace and installs `pstack@cursor-plugins`. | Runs `claude plugin marketplace update cursor-plugins`, then `claude plugin update pstack@cursor-plugins`, and shows the result. |
-| Codex | Clones `cursor/plugins` to `~/.local/share/cursor-plugins` and links `~/.codex/skills/pstack` to it. | Pulls that clone. |
+| Claude | Adds the `cursor-plugins` marketplace and installs `pstack@cursor-plugins`. | Runs `claude plugin marketplace update cursor-plugins`, checks the downloaded pstack, and runs `claude plugin update pstack@cursor-plugins` only if the check passes. |
+| Codex | Clones `cursor/plugins` to `~/.local/share/cursor-plugins` and links `~/.codex/skills/pstack` to it. | Pulls that clone and checks it. If the check fails, it moves the clone back to the commit it had. |
 | Grok, with Claude installed | Nothing. Grok reads `~/.claude/skills` and Claude's installed plugins. | Updated through Claude. |
-| Grok, without Claude | Same as Codex, with `~/.grok/skills/pstack`. | Pulls the clone. |
+| Grok, without Claude | Same as Codex, with `~/.grok/skills/pstack`. | Same as Codex. |
 
 It also links `t3-mode` into `~/.claude/skills`, `~/.codex/skills`, and, on machines without Claude, `~/.grok/skills`.
 
-If a real pstack folder sits in `~/.codex/skills`, `~/.agents/skills`, or `~/.grok/skills`, the installer moves it to `~/.local/share/pstack-t3/backups/<harness>-<folder>-pstack-<timestamp>` and links the managed clone in its place. The backup lives outside every skills folder, so no harness loads pstack twice.
+If a real pstack folder sits in `~/.codex/skills`, `~/.agents/skills`, or `~/.grok/skills`, the installer moves it to `~/.local/share/pstack-t3/backups/<harness>-<folder>-pstack-<timestamp>` and links the managed clone in its place. The backup lives outside every skills folder, so no harness loads pstack twice. When the managed clone fails the check, the installer leaves your folder where it is and prints `kept <harness>'s own pstack folder`.
 
 The installer pulls this repo first. If the pull brings a newer `install.sh`, it prints `updated pstack-t3 to <commit>, restarting the installer` and runs the new version once.
 
@@ -62,14 +62,16 @@ Every step is safe to rerun.
 | File | Purpose |
 | --- | --- |
 | `skills/t3-mode/SKILL.md` | Entry skill. Finds pstack, loads `harness-t3.md`, runs `poteto-mode`. |
-| `skills/t3-mode/harness-t3.md` | Maps each Cursor name in pstack to its T3 equivalent for Claude, Codex, and Grok. Holds the model role defaults. |
+| `skills/t3-mode/harness-t3.md` | Maps each Cursor name in pstack to its T3 equivalent for Claude, Codex, and Grok, and says how to read a profile. |
 | `skills/t3-mode/agents/openai.yaml` | Display name and default prompt for Codex. |
 | `install.sh` | Installs and updates everything on one machine. |
-| `skills/t3-mode/profiles/` | Built-in model profiles. |
+| `skills/t3-mode/profiles/` | Built-in model profiles. `default.md` holds every role's default. |
 | `profile.sh` | Lists, shows, switches, and checks profiles. |
 | `check.sh` | Fails when pstack uses a Cursor subagent field that `harness-t3.md` does not map, drops a file `t3-mode` reads, or adds or removes a model role. Takes an optional pstack path. `--record` marks a pstack as read and verified. |
 | `pstack-verified.txt` | The last pstack read and verified by hand, with checksums of the files `t3-mode` follows closely. |
-| `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries. Covers takeover, rerun, a failed Claude update, Grok inheritance, offline upstream, the self-update restart, and profiles. |
+| `test-install.sh` | Runs `install.sh` in throwaway home folders with stub binaries and a local git repo standing in for upstream. Covers takeover, rerun, a failed Claude update, updates held for Claude and Codex, a working folder kept when upstream fails the check, Grok inheritance, offline upstream, the self-update restart, the `review:` notice, profiles, and this README's version lines and file list. |
+| `upstream-job.md` | The brief the daily upstream job runs. |
+| `LICENSE` | MIT. |
 
 ## Model profiles
 
@@ -78,7 +80,7 @@ A profile sets the model, effort, and speed for every pstack role. `t3-mode` rea
 | Profile | For |
 | --- | --- |
 | `default` | Code on Codex Sol, judgment on Opus 5.5, panels of Fable 5.2, Opus 5.5, Gemini 4 Neon, and Sol, and Grok 4.7 added for decisions that are hard to reverse. |
-| `budget` | Lower effort, two-seat panels of Opus and Sol, no Fable or Grok. |
+| `budget` | Lower effort, two-seat panels of Opus and Sol, no Fable, Gemini, or Grok. |
 | `deep` | `xhigh` everywhere, Fable 5.2 for judgment, and Gemini and Grok on every panel. |
 | `claude-only` | Every child on Claude. Arena has no cross-vendor judge. |
 
@@ -105,9 +107,13 @@ Providers are `claudeAgent`, `codex`, `grok`, and `antigravity` for Gemini. A mo
 
 ## Why it is built this way
 
-**Plain Claude Code loses pstack's model mix.** pstack is written for Cursor. Its Claude Code adapter, `docs/harness/claude-code.md`, tells the agent to drop any `grok-*` or `gpt-*` model and run on the session model. Every arena, interrogate, and cross-judge panel then becomes Claude reviewing Claude. T3's `delegate_task` can start Codex and Grok children, so the panels keep their mix.
+**Plain Claude Code loses pstack's model mix.** pstack is written for Cursor. Its Claude Code adapter, `docs/harness/claude-code.md`, tells the agent to drop any `grok-*` or `gpt-*` model and run on the session model. Every arena, interrogate, and cross-judge panel then becomes Claude reviewing Claude. T3's `delegate_task` can start Codex, Gemini, and Grok children, so the panels keep their mix. Gemini 4 Neon runs through T3's `antigravity` provider.
 
-**An adapter outlives a fork.** pstack has about 60 skills and 23 playbooks and ships often. The plugin cache on the first machine held 0.15.29 and 0.15.36 a week apart. pstack already supports other harnesses through a translation table instead of copies. `harness-t3.md` follows that pattern, and `check.sh` catches the day pstack adds a field the table does not cover.
+**An adapter outlives a fork.** pstack has about 60 skills and 23 playbooks and ships often. The plugin cache on the first machine held 0.15.29 and 0.15.36 a week apart. pstack already supports other harnesses through a translation table instead of copies. `harness-t3.md` follows that pattern, and `check.sh` catches the day pstack adds a field the table does not cover, drops a file `t3-mode` reads, or changes its model roles.
+
+**Gate updates instead of pinning a version.** pstack went from 0.15.36 to 0.15.48 in eleven days. A pin goes stale within days and gives no signal about which update is safe, and Claude's plugin commands cannot pin a version. The installer instead checks each new pstack and keeps the current one when the check fails. The checks passed on 0.15.42 and 0.15.43 while real drift slipped through: retired roles and the new `worker.md` rule. So `check.sh` now also checks files and roles, and the daily job sends wording changes to a model for review.
+
+**The fix comes as a pull request, not from each machine.** An agent inside the installer would write a different, unreviewed fix on every machine. One scheduled job writes one fix, gets a review from another vendor's model, and waits for your merge.
 
 **T3 has rules that Cursor and plain Claude Code do not.** Each rule below changed a row in `harness-t3.md`.
 
@@ -135,11 +141,13 @@ These ran on real machines, not only in tests.
 
 | Machine | OS | Result |
 | --- | --- | --- |
-| Desktop | Linux | Update path and takeover of a stray Codex copy. All harnesses at 0.15.36. |
-| Laptop | Linux | Update path. All harnesses at 0.15.36. |
-| MacBook | macOS | First install for Claude and Codex. Passed under Homebrew bash 5.2 and under `/bin/bash` 3.2. |
+| Desktop | Linux | Update path and takeover of a stray Codex copy. Updated through 0.15.43 on 2026-11-18. A Gemini 4 Neon child answered through `antigravity` on 2026-11-25. |
+| Laptop | Linux | Update path. All harnesses at 0.15.36 on 2026-11-14. |
+| MacBook | macOS | First install for Claude and Codex, at 0.15.36 on 2026-11-14. Passed under Homebrew bash 5.2 and under `/bin/bash` 3.2. |
 
-The self-update restart worked against real git in a throwaway repo. It has not yet run on a real machine. A real Claude update failure has only been simulated.
+The daily job's brief ran once for real on 2026-11-25 against 0.15.48. It opened [pull request #1](https://github.com/thariman/pstack-t3/pull/1), got a Codex Sol review, and sent the Telegram message. Its three wording mistakes are fixed.
+
+Not yet run on a real machine: the self-update restart, a held update, and a real Claude update failure. Tests cover each. The gate and profiles have not run under macOS `/bin/bash` 3.2.
 
 ## Known limits
 
@@ -148,6 +156,8 @@ The self-update restart worked against real git in a throwaway repo. It has not 
 - **Updates do not happen on launch.** Claude's auto-update for the `cursor-plugins` marketplace is off by default. Turn it on in `/plugin`, on the Marketplaces tab. Grok then follows Claude. Codex never updates on launch. Only `install.sh` updates it. The daily job checks upstream, but it changes `t3-mode`, not your installed pstack.
 - **Claude installs pstack over SSH on some machines.** On the MacBook, `claude plugin marketplace add` cloned `git@github.com:cursor/plugins.git`. A machine without a GitHub SSH key can fail at that step.
 - **`check.sh` runs under the first `bash` on `PATH`**, not under the `bash` that runs `install.sh`.
+- **The daily job runs on one machine.** It needs T3 open there, `gh` signed in, and `~/research/stacks/cursor-plugins`. The other machines only take its merged fixes.
+- **A held update stays held until you merge.** Each machine keeps its old pstack, and installs the new one on its first install after the fix lands.
 
 ## Sources
 
@@ -171,12 +181,15 @@ MIT. See `LICENSE`.
 
 ## Develop
 
-Run both checks before you push.
+Run the checks before you push.
 
 ```bash
 ./check.sh
+./profile.sh check
 ./test-install.sh
 ```
+
+Update this README in the same commit as any change it describes. `test-install.sh` fails when the example version lines differ from `pstack-verified.txt`, or when a tracked file is missing from the Files table.
 
 `check.sh` with no argument checks the newest installed pstack. Pass a path to check another copy, such as `./check.sh ~/.codex/skills/pstack`.
 
@@ -184,10 +197,10 @@ After you read a new pstack's changes and update `t3-mode` to match, run `./chec
 
 ## Daily upstream job
 
-A T3 scheduled task on one machine runs [`upstream-job.md`](upstream-job.md) every morning. When upstream pstack fails the check or changes a file `t3-mode` follows closely, it starts a `t3-mode` agent that:
+A T3 scheduled task, "pstack-t3 daily upstream check", runs [`upstream-job.md`](upstream-job.md) at 08:00 on the Desktop. All runs share one thread, each in a fresh session. On a day when nothing needs a change, it replies with one line and sends nothing. When upstream pstack fails the check or changes a file `t3-mode` follows closely, it starts a `t3-mode` agent that:
 
 1. updates `t3-mode` on a branch in a separate worktree, so the live skill on that machine never changes mid-run
-2. runs both checks, records the new pstack, and opens a pull request
+2. updates this README for every change, runs the checks, records the new pstack, and opens a pull request
 3. asks a Codex Sol reviewer for a second opinion and fixes what it finds
 4. sends the pull request link to Telegram
 

@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 src=$(cd "$(dirname "$0")" && pwd)
+# The README's example output names the recorded pstack, and its Files table lists every tracked file.
+verified=$(sed -n '1s/^# pstack \([^,]*\),.*/\1/p' "$src/pstack-verified.txt")
+for h in upstream claude codex grok; do
+  grep -qx "$h: pstack $verified" "$src/README.md" || { echo "README: example line '$h: pstack $verified' is missing"; exit 1; }
+done
+if git -C "$src" rev-parse --git-dir > /dev/null 2>&1; then
+  for f in $(git -C "$src" ls-files); do
+    case $f in README.md) continue ;; esac
+    grep -qF "| \`$f\` |" "$src/README.md" || grep -qF "| \`$(dirname "$f")/\` |" "$src/README.md" \
+      || { echo "README: $f is missing from the Files table"; exit 1; }
+  done
+fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/bin" "$tmp/repo/skills/t3-mode" "$tmp/fixture/skills/poteto-mode" "$tmp/fixture/skills/setup-pstack" "$tmp/fixture/agents" "$tmp/fixture/docs/harness"
