@@ -36,6 +36,16 @@ gate() {
   return 1
 }
 
+# Backups live beside the clone, never inside ~/.local/share/pstack-t3, so the install one-liner's
+# folder test only ever sees a real clone. Older installers put them there, so move those out.
+backups=~/.local/share/pstack-t3-backups
+old_backups=~/.local/share/pstack-t3/backups
+if [ -d "$old_backups" ] && [ "$src" != ~/.local/share/pstack-t3 ]; then
+  mkdir -p "$backups"; mv "$old_backups"/* "$backups"/ 2>/dev/null || true
+  rmdir "$old_backups" ~/.local/share/pstack-t3 2>/dev/null || true
+  echo "moved old backups to $backups"
+fi
+
 found=0
 pulled=""
 clone_fails=""
@@ -104,7 +114,7 @@ for h in codex grok agy; do
   for p in "${copies[@]}"; do
     [ -d "$p" ] && [ ! -L "$p" ] || continue
     if [ -n "$clone_fails" ]; then keep=1; continue; fi
-    backup="$HOME/.local/share/pstack-t3/backups/$h-$(basename "$(dirname "$(dirname "$p")")" | tr -d .)-pstack"
+    backup="$backups/$h-$(basename "$(dirname "$(dirname "$p")")" | tr -d .)-pstack"
     dest="$backup-$(date +%Y%m%d-%H%M%S)"
     while [ -e "$dest" ]; do sleep 1; dest="$backup-$(date +%Y%m%d-%H%M%S)"; done
     mkdir -p "$(dirname "$dest")"

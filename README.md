@@ -14,6 +14,8 @@ Run this command. It works for the first install and for every update after.
 [ -d ~/.local/share/pstack-t3 ] || git clone https://github.com/thariman/pstack-t3 ~/.local/share/pstack-t3; ~/.local/share/pstack-t3/install.sh
 ```
 
+On a machine where you keep your own clone, such as `~/projects/pstack-t3`, run that clone's `install.sh` instead. The links then point at your clone.
+
 The first line names the harnesses the installer found. It installs only for those and skips the rest. A healthy run ends with one version line per harness it found and the drift check.
 
 ```text
@@ -57,7 +59,7 @@ A harness counts as installed when its command is on `PATH`. Antigravity also co
 
 It also links `t3-mode` into `~/.claude/skills`, `~/.codex/skills`, and, on machines without Claude, `~/.grok/skills`.
 
-If a real pstack folder sits in `~/.codex/skills`, `~/.agents/skills`, or `~/.grok/skills`, the installer moves it to `~/.local/share/pstack-t3/backups/<harness>-<folder>-pstack-<timestamp>` and links the managed clone in its place. The backup lives outside every skills folder, so no harness loads pstack twice. When the managed clone fails the check, the installer leaves your folder where it is and prints `kept <harness>'s own pstack folder`.
+If a real pstack folder sits in `~/.codex/skills`, `~/.agents/skills`, or `~/.grok/skills`, the installer moves it to `~/.local/share/pstack-t3-backups/<harness>-<folder>-pstack-<timestamp>` and links the managed clone in its place. The backup lives outside every skills folder, so no harness loads pstack twice. When the managed clone fails the check, the installer leaves your folder where it is and prints `kept <harness>'s own pstack folder`.
 
 The installer pulls this repo first. If the pull brings a newer `install.sh`, it prints `updated pstack-t3 to <commit>, restarting the installer` and runs the new version once.
 

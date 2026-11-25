@@ -70,7 +70,7 @@ run() {
   grep -q '^ok: every Cursor name' "$tmp/output"
 }
 backup_count() {
-  find "$HOME/.local/share/pstack-t3/backups" -name '*-pstack-*' -type d | wc -l | tr -d ' '
+  find "$HOME/.local/share/pstack-t3-backups" -name '*-pstack-*' -type d | wc -l | tr -d ' '
 }
 export HOME
 HOME=$(mktemp -d "$tmp/home-a.XXXXXX")
@@ -78,8 +78,9 @@ mkdir -p "$HOME/.codex/skills"
 cp -R "$tmp/fixture" "$HOME/.codex/skills/pstack"
 run a
 [ -L "$HOME/.codex/skills/pstack" ]
+[ ! -e "$HOME/.local/share/pstack-t3" ]
 [ "$(backup_count)" = 1 ]
-backup=$(find "$HOME/.local/share/pstack-t3/backups" -name 'codex-codex-pstack-*' -type d)
+backup=$(find "$HOME/.local/share/pstack-t3-backups" -name 'codex-codex-pstack-*' -type d)
 diff -r "$tmp/fixture" "$backup"
 [ "$(find "$HOME/.codex/skills" -type d -name pstack | wc -l | tr -d ' ')" = 0 ]
 grep -q '^codex: pstack 0.15.36 STALE$' "$tmp/output"
@@ -171,7 +172,7 @@ for pass in 1 2; do
   grep -q "^kept codex's own pstack folder" "$tmp/output"
   [ -d "$HOME/.codex/skills/pstack" ] && [ ! -L "$HOME/.codex/skills/pstack" ]
   [ -f "$HOME/.codex/skills/pstack/skills/poteto-mode/worker.md" ]
-  [ ! -d "$HOME/.local/share/pstack-t3/backups" ]
+  [ ! -d "$HOME/.local/share/pstack-t3-backups" ]
 done
 git -C "$tmp/upstream" checkout -q HEAD~1 -- pstack && upstream_commit fixed
 printf '#!/bin/bash\nexit 0\n' > "$tmp/bin/agy"; chmod +x "$tmp/bin/agy"
@@ -191,7 +192,10 @@ grep -q "^skip $HOME/.gemini/config/skills.json: it is not the installer's" "$tm
 grep -q '^harnesses on this machine: codex grok agy\. Not here, skipped: claude$' "$tmp/output"
 rm "$tmp/bin/agy"
 HOME=$(mktemp -d "$tmp/home-j.XXXXXX")
+mkdir -p "$HOME/.local/share/pstack-t3/backups/codex-codex-pstack-old"
 run j
+grep -q "^moved old backups to $HOME/.local/share/pstack-t3-backups$" "$tmp/output"
+[ -d "$HOME/.local/share/pstack-t3-backups/codex-codex-pstack-old" ] && [ ! -e "$HOME/.local/share/pstack-t3" ]
 grep -q '^harnesses on this machine: codex grok\. Not here, skipped: claude agy$' "$tmp/output"
 [ ! -e "$HOME/.gemini" ]
 if grep -q '^agy:' "$tmp/output"; then exit 1; fi
